@@ -217,7 +217,13 @@ const io = socketIo(server, {
 
 let openai = null;
 if (process.env.OPENAI_API_KEY) {
-    try { openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, baseURL: process.env.AI_BASE_URL || "https://api.openai.com/v1" }); } catch (e) {}
+    try {
+        openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+            baseURL: process.env.AI_BASE_URL || "https://api.openai.com/v1"
+        });
+        console.log(`✅ [AI] Groq/OpenAI client initialized (base: ${process.env.AI_BASE_URL || 'OpenAI'})`);
+    } catch (e) { console.error('❌ [AI] Init failed:', e.message); }
 }
 
 // ═══════════════ MIDDLEWARE ═══════════════
@@ -403,7 +409,8 @@ app.get('/health', (req, res) => {
         mode: INFINITE_MODE ? 'INFINITE' : 'STANDARD',
         speed: PROMax_SPEED ? 'PROMAX' : 'STANDARD',
         connection: LIFETIME_CONNECTION ? 'LIFETIME' : 'STANDARD',
-        logoCached: !!LOGO_BUFFER
+        logoCached: !!LOGO_BUFFER,
+        aiReady: !!openai
     });
 });
 
@@ -458,6 +465,7 @@ app.get('/api/json/stats', async (req, res) => {
         ping,
         bot: settings.botName,
         version: settings.botVersion || 'V16-ULTRA',
+        aiReady: !!openai,
         timestamp: new Date().toISOString()
     });
 });
@@ -490,7 +498,10 @@ app.get('/api/json/settings', (req, res) => {
             infiniteMode: INFINITE_MODE,
             promaxSpeed: PROMax_SPEED,
             lifetimeConnection: LIFETIME_CONNECTION,
-            version: settings.botVersion || 'V16-ULTRA'
+            version: settings.botVersion || 'V16-ULTRA',
+            aiReady: !!openai,
+            aiBaseUrl: process.env.AI_BASE_URL || 'openai',
+            aiModel: process.env.AI_MODEL || 'gpt-3.5-turbo'
         }
     });
 });
@@ -856,12 +867,19 @@ class BotSession {
         if (!openai) return null;
         try {
             const completion = await openai.chat.completions.create({
-                model: process.env.AI_MODEL || "gpt-3.5-turbo",
-                messages: [{ role: "system", content: "Helpful assistant. Reply in the same language the user writes in." }, { role: "user", content: userMessage }],
-                max_tokens: 250
+                model: process.env.AI_MODEL || "llama-3.1-8b-instant",
+                messages: [
+                    { role: "system", content: "You are BL@CKN1TE-NXS-ULTRA, a helpful assistant. Reply in the same language the user writes in. Keep responses concise." },
+                    { role: "user", content: userMessage }
+                ],
+                max_tokens: 400,
+                temperature: 0.7
             });
             return completion.choices[0].message.content.trim();
-        } catch (error) { return null; }
+        } catch (error) {
+            console.error(`[AI] Error: ${error.message}`);
+            return null;
+        }
     }
 
     startKeepAlive() {
@@ -1745,6 +1763,7 @@ server.listen(PORT, async () => {
     console.log(`🔒 LIFETIME CONNECTION: ENABLED`);
     console.log(`🎯 PER-SESSION START/STOP: ENABLED`);
     console.log(`💾 STATE PERSISTENCE: data/session_states.json`);
+    console.log(`🤖 AI: ${openai ? `READY (${process.env.AI_MODEL || 'llama-3.1-8b-instant'})` : 'OFFLINE (no key)'}`);
     console.log(`🖼️ Loading logo into RAM...`);
 
     await ensureLogo(10);
