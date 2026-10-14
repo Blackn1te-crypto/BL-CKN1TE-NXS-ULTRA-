@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════
-//  BL@CKN1TE-NXS-ULTRA · SERVER v16
+//  BL@CKN1TE-NXS-ULTRA · SERVER v16 · MEGA ULTIMATE
 //  The Incisive Tri-Hat Hacker
 // ═══════════════════════════════════════════════════════════════════
 
@@ -73,7 +73,7 @@ const RETRY_REQUEST_DELAY_MS = 300;
 const MAX_MSG_RETRY_COUNT = 3;
 const RECONNECT_SILENCE_WINDOW_MS = 120000;
 
-// ═══════════════ LOGO CACHE ═══════════════
+// ═══════════════ LOGO BUFFER CACHE ═══════════════
 let LOGO_BUFFER = null;
 let LOGO_LOADING = false;
 
@@ -81,19 +81,23 @@ async function preloadLogo() {
     if (LOGO_BUFFER || LOGO_LOADING) return LOGO_BUFFER;
     LOGO_LOADING = true;
 
+    // 1. Try local file first
     try {
         if (fs.existsSync(LOCAL_LOGO)) {
             LOGO_BUFFER = fs.readFileSync(LOCAL_LOGO);
-            console.log(`✅ [LOGO] Local file loaded (${LOGO_BUFFER.length} bytes)`);
+            console.log(`✅ [LOGO] Local file cached (${LOGO_BUFFER.length} bytes)`);
             LOGO_LOADING = false;
             return LOGO_BUFFER;
         }
     } catch (e) { console.error('Local logo read failed:', e.message); }
 
+    // 2. Fetch from GitHub
     try {
         const res = await axios.get(LOGO_URL, { responseType: 'arraybuffer', timeout: 15000 });
         LOGO_BUFFER = Buffer.from(res.data);
         console.log(`✅ [LOGO] Fetched from URL (${LOGO_BUFFER.length} bytes)`);
+        // Save to local for next time
+        try { fs.writeFileSync(LOCAL_LOGO, LOGO_BUFFER); } catch (_) {}
     } catch (e) {
         console.error(`⚠️ [LOGO] Preload failed: ${e.message}`);
     }
@@ -111,7 +115,7 @@ async function ensureLogo(retries = 5) {
     for (let i = 0; i < retries; i++) {
         const buf = await getLogoBuffer();
         if (buf && buf.length > 0) return buf;
-        await delay(2000);
+        await delay(1500);
     }
     return null;
 }
@@ -125,12 +129,20 @@ function safeRequire(filePath, name) {
         }
         console.log(`⚠️  [CMD] Skipped (missing): ${name}`);
         return async function stub(sock, from, msg) {
-            try { await sock.sendMessage(from, { text: `⚠️ *Command ${PREFIXES[0]}${name} unavailable.*` }, { quoted: msg }); } catch (e) {}
+            try {
+                await sock.sendMessage(from, {
+                    text: `⚠️ *Command .${name} is not available in this build.*\n\n_Contact owner for support._`
+                }, { quoted: msg });
+            } catch (e) {}
         };
     } catch (e) {
         console.error(`❌ [CMD] Failed: ${name}: ${e.message}`);
         return async function stub(sock, from, msg) {
-            try { await sock.sendMessage(from, { text: `⚠️ *Command ${PREFIXES[0]}${name} unavailable.*` }, { quoted: msg }); } catch (e) {}
+            try {
+                await sock.sendMessage(from, {
+                    text: `⚠️ *Command .${name} is temporarily offline.*\n\n_Retry shortly._`
+                }, { quoted: msg });
+            } catch (e) {}
         };
     }
 }
@@ -222,21 +234,21 @@ if (process.env.OPENAI_API_KEY) {
             apiKey: process.env.OPENAI_API_KEY,
             baseURL: process.env.AI_BASE_URL || "https://api.openai.com/v1"
         });
-        console.log(`✅ [AI] Groq/OpenAI client initialized (base: ${process.env.AI_BASE_URL || 'OpenAI'})`);
+        console.log(`✅ [AI] Ready (${process.env.AI_MODEL || 'llama-3.1-8b-instant'})`);
     } catch (e) { console.error('❌ [AI] Init failed:', e.message); }
 }
 
 // ═══════════════ MIDDLEWARE ═══════════════
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 app.use(session({
     secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: { maxAge: 30 * 60 * 1000, httpOnly: true, sameSite: 'lax' }
 }));
-app.use(express.static(path.join(__dirname)));
-app.use('/assets', express.static(path.join(__dirname, 'assets')));
+app.use(express.static(path.join(__dirname), { maxAge: '1d' }));
+app.use('/assets', express.static(path.join(__dirname, 'assets'), { maxAge: '1d' }));
 
 // ═══════════════ ROUTES ═══════════════
 app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'login.html')); });
@@ -247,23 +259,49 @@ app.get('/dashboard.html', (req, res) => { res.sendFile(path.join(__dirname, 'in
 app.get('/index.html', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
 app.get('/welcome', (req, res) => { res.redirect('/login.html'); });
 
-app.get('/logo.png', (req, res) => {
-    if (LOGO_BUFFER) {
-        res.set('Content-Type', 'image/png');
-        res.send(LOGO_BUFFER);
-    } else {
+// ═══════════════ LOGO BUFFER ENDPOINT ═══════════════
+app.get('/logo.png', async (req, res) => {
+    try {
+        const buf = await getLogoBuffer();
+        if (buf && buf.length > 0) {
+            res.set('Content-Type', 'image/png');
+            res.set('Cache-Control', 'public, max-age=86400');
+            res.set('Content-Disposition', 'inline; filename="bl@ckn1te-nxs-logo.png"');
+            res.send(buf);
+        } else {
+            res.redirect(LOGO_URL);
+        }
+    } catch (e) {
         res.redirect(LOGO_URL);
     }
 });
 
-// ═══════════════ AUTH ENDPOINTS ═══════════════
+// Download endpoint — user can save logo file
+app.get('/download-logo', async (req, res) => {
+    try {
+        const buf = await getLogoBuffer();
+        if (buf && buf.length > 0) {
+            res.set('Content-Type', 'image/png');
+            res.set('Content-Disposition', 'attachment; filename="bl@ckn1te-nxs-logo.png"');
+            res.send(buf);
+        } else {
+            res.status(404).json({ error: 'Logo not cached yet' });
+        }
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ═══════════════ AUTH ═══════════════
 app.post('/api/login', (req, res) => {
     try {
         const { username, password } = req.body || {};
-        if (!username || !password) {
-            return res.status(400).json({ success: false, error: 'Missing credentials' });
-        }
-        if (username.toLowerCase() === PANEL_USER.toLowerCase() && password === PANEL_PASS) {
+        if (!username || !password) return res.status(400).json({ success: false, error: 'Missing credentials' });
+
+        const validUser = 'bl@ckn1te';
+        const validPass = '0506';
+
+        if (username.toLowerCase() === validUser && password === validPass) {
             const sessionToken = require('crypto').randomBytes(24).toString('hex');
             req.session.user = username;
             req.session.token = sessionToken;
@@ -277,51 +315,6 @@ app.post('/api/login', (req, res) => {
             });
         }
         return res.status(401).json({ success: false, error: 'Invalid operator ID or access key' });
-    } catch (e) {
-        res.status(500).json({ success: false, error: e.message });
-    }
-});
-
-// ═══════════════ CHANNEL-JOIN VERIFICATION ═══════════════
-const verifyCache = new NodeCache({ stdTTL: 30 * 60, checkperiod: 120 });
-
-app.post('/api/verify-join', (req, res) => {
-    try {
-        const ip = req.ip || req.connection.remoteAddress || 'unknown';
-        const { joined, username } = req.body || {};
-
-        if (!joined) {
-            return res.json({ success: false, verified: false, error: 'Join confirmation required' });
-        }
-
-        const rlKey = `join_${ip}`;
-        const attempts = verifyCache.get(rlKey) || 0;
-        if (attempts > 5) {
-            return res.status(429).json({ success: false, error: 'Too many attempts. Wait a few minutes.' });
-        }
-        verifyCache.set(rlKey, attempts + 1, 600);
-
-        const token = require('crypto').randomBytes(24).toString('hex');
-        verifyCache.set(`verified_${token}`, {
-            ip,
-            username: username || 'anonymous',
-            verifiedAt: Date.now()
-        });
-
-        console.log(`✅ [CHANNEL] Join verified for ${username || 'anonymous'} from ${ip}`);
-        return res.json({ success: true, verified: true, token, redirect: '/index.html' });
-    } catch (e) {
-        res.status(500).json({ success: false, error: e.message });
-    }
-});
-
-app.post('/api/check-verified', (req, res) => {
-    try {
-        const { token } = req.body || {};
-        if (!token) return res.json({ success: false, verified: false });
-        const data = verifyCache.get(`verified_${token}`);
-        if (data) return res.json({ success: true, verified: true, ...data });
-        return res.json({ success: false, verified: false });
     } catch (e) {
         res.status(500).json({ success: false, error: e.message });
     }
@@ -434,26 +427,7 @@ app.get('/api/badge', (req, res) => {
     });
 });
 
-// ═══════════════ SESSION STATE ═══════════════
-app.get('/api/session-state/:userId', (req, res) => {
-    const userId = req.params.userId;
-    if (!userId) return res.status(400).json({ success: false, error: 'userId required' });
-    const persisted = sessionStates[userId] || {};
-    const live = sessions[userId];
-    const isConnected = live ? live.isConnected : false;
-    const isRunning = live ? live.isRunning : (persisted.isRunning || false);
-    res.json({
-        success: true,
-        userId,
-        connected: isConnected,
-        running: isRunning,
-        paused: isConnected && !isRunning,
-        botName: botData.userNames?.[userId] || settings.botName,
-        prefixes: PREFIXES
-    });
-});
-
-// ═══════════════ JSON FALLBACK ENDPOINTS ═══════════════
+// ═══════════════ JSON FALLBACKS ═══════════════
 app.get('/api/json/stats', async (req, res) => {
     const sys = getSystemStats();
     const sess = getSessionStats();
@@ -479,14 +453,24 @@ app.get('/api/json/banner', (req, res) => {
         isRunning: realSession ? realSession.isRunning : true,
         isConnected: realSession ? realSession.isConnected : true
     };
-    res.json({ success: true, banner: buildCyberpunkBannerSync(fakeSession, botName), online: fakeSession.isRunning, user: userId });
+    res.json({
+        success: true,
+        banner: buildCyberpunkBannerSync(fakeSession, botName),
+        online: fakeSession.isRunning,
+        user: userId
+    });
 });
 
 app.get('/api/json/menu', (req, res) => {
     const userId = req.query.user || 'default';
     const fakeSession = { userId, isRunning: true, isConnected: true, readReceipts: true, autoReact: false, aiEnabled: false, isPublic: false };
     const fakeBotData = { antiDelete: {}, statusSettings: {}, antilinkGroups: {}, antiCall: {} };
-    res.json({ success: true, menu: buildBeautifulMenuSync(fakeSession, fakeBotData, 'Operator'), online: true, user: userId });
+    res.json({
+        success: true,
+        menu: buildBeautifulMenuSync(fakeSession, fakeBotData, 'Operator'),
+        online: true,
+        user: userId
+    });
 });
 
 app.get('/api/json/settings', (req, res) => {
@@ -501,12 +485,11 @@ app.get('/api/json/settings', (req, res) => {
             version: settings.botVersion || 'V16-ULTRA',
             aiReady: !!openai,
             aiBaseUrl: process.env.AI_BASE_URL || 'openai',
-            aiModel: process.env.AI_MODEL || 'gpt-3.5-turbo'
+            aiModel: process.env.AI_MODEL || 'llama-3.1-8b-instant'
         }
     });
 });
 
-// ═══════════════ SESSIONS API ═══════════════
 app.get('/api/sessions', (req, res) => {
     const list = Object.values(sessions).map(s => ({
         userId: s.userId,
@@ -523,7 +506,7 @@ app.get('/api/sessions', (req, res) => {
     });
 });
 
-// ═══════════════ STORAGE (WITH JSON FALLBACK) ═══════════════
+// ═══════════════ STORAGE ═══════════════
 const AUTH_DIR = settings.authDir || './auth_info';
 const DATA_FILE = './data/bot_data.json';
 const BLACKLIST_FILE = './data/blacklist.json';
@@ -532,15 +515,9 @@ fs.ensureDirSync(AUTH_DIR);
 fs.ensureDirSync('./data');
 
 const defaultBotData = {
-    antilinkGroups: {},
-    totalBots: 0,
-    registeredBots: [],
-    statusSettings: {},
-    antiDelete: {},
-    userNames: {},
-    antiCall: {},
-    antiStatusGroups: {},
-    readSettings: {}
+    antilinkGroups: {}, totalBots: 0, registeredBots: [],
+    statusSettings: {}, antiDelete: {}, userNames: {},
+    antiCall: {}, antiStatusGroups: {}, readSettings: {}
 };
 
 function safeReadJson(file, fallback) {
@@ -649,6 +626,7 @@ function buildCyberpunkBannerSync(session, botName) {
 ╰┈➤ 🎯 ${toBold("YOU'RE NOW LINKED TO")}
 ╰┈➤ ➜ ${toBold('BL@CKN1TE-NXS')} · ${toBold('V16 ULTRA')}
 ╰┈➤ ➜ ${toBold('SECURED & ENCRYPTED')}
+╰┈➤ ➜ ${toBold('LIFETIME CONNECTION')}
 
 ┏━〔 ${toBold('🌐 SESSION POOL')} 〕━━━━━━━━━
 ┃  🟢 ${toBold('RUNNING')}  : ${sess.running}
@@ -665,6 +643,8 @@ function buildCyberpunkBannerSync(session, botName) {
 ⛧━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━⛧
 ║  🔗 ${toBold('CHANNEL')}
 ║  ➜ ${CHANNEL_URL}
+║  🖼️ Logo: ${toBold('/logo.png')}
+║  📥 Download: ${toBold('/download-logo')}
 ⛧━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━⛧
 
    🎩🔥⚡️ ${toBold('BL@CKN1TE-NXS')} ⚡️🔥🎩
@@ -774,7 +754,7 @@ const LIGHTNING_EMOJIS = ['⚡', '🌩️', '⚡️', '✨', '🌟', '🔥', '�
 const RANDOM_REACTIONS = ['⚡', '🔥', '✨', '🌟', '💫', '🎯', '🚀', '💥', '⚡️', '👑', '💎', '🎉', '✅', '🤖', '😎', '🙌', '👏', '💯', '🌟', '🪄', '🧿', '🍀', '🌈', '❤️', '👍', '🎊', '⭐'];
 function getRandomReaction() { return RANDOM_REACTIONS[Math.floor(Math.random() * RANDOM_REACTIONS.length)]; }
 
-// ═══════════════ BOT SESSION CLASS ═══════════════
+// ═══════════════ BOT SESSION ═══════════════
 class BotSession {
     constructor(userId) {
         this.userId = userId;
@@ -869,11 +849,15 @@ class BotSession {
             const completion = await openai.chat.completions.create({
                 model: process.env.AI_MODEL || "llama-3.1-8b-instant",
                 messages: [
-                    { role: "system", content: "You are BL@CKN1TE-NXS-ULTRA, a helpful assistant. Reply in the same language the user writes in. Keep responses concise." },
+                    {
+                        role: "system",
+                        content: "You are BL@CKN1TE-NXS-ULTRA, a helpful WhatsApp assistant created by BL@CKN1TE (The Incisive Tri-Hat Hacker). Reply in the same language the user writes in. Keep responses helpful, concise, and friendly."
+                    },
                     { role: "user", content: userMessage }
                 ],
-                max_tokens: 400,
-                temperature: 0.7
+                max_tokens: 1024,  // Increased memory
+                temperature: 0.75,
+                top_p: 0.95
             });
             return completion.choices[0].message.content.trim();
         } catch (error) {
@@ -917,7 +901,9 @@ class BotSession {
             if (this.isConnected && this.isRunning && this.sock?.user) {
                 try {
                     const botNumber = jidNormalizedUser(this.sock.user.id);
-                    await this.sock.sendMessage(botNumber, { text: "♾️ 𝗕𝗟@𝗖𝗞𝗡𝟭𝗧𝗘-𝗡𝗫𝗦 𝗜𝗦 𝗢𝗡𝗟𝗜𝗡𝗘 🚀\n\n_Lifetime Connection Active_" });
+                    await this.sock.sendMessage(botNumber, {
+                        text: "♾️ 𝗕𝗟@𝗖𝗞𝗡𝟭𝗧𝗘-𝗡𝗫𝗦 𝗜𝗦 𝗢𝗡𝗟𝗜𝗡𝗘 🚀\n\n_Lifetime Connection Active_"
+                    });
                 } catch (e) {}
             }
         }, ACTIVE_CHECK_INTERVAL_MS);
@@ -1140,6 +1126,7 @@ class BotSession {
                                                     menuText = `⚠️ Menu build failed.\n\n${buildErr.message}`;
                                                 }
 
+                                                // ═══ SEND MENU WITH LOGO — one message, no waiting ═══
                                                 const logoBuffer = await ensureLogo(5);
 
                                                 if (logoBuffer && logoBuffer.length > 0) {
@@ -1149,7 +1136,7 @@ class BotSession {
                                                             caption: menuText,
                                                             mimetype: 'image/png'
                                                         }, { quoted: msg });
-                                                        this.sendLog('📋 Cyberpunk menu sent (logo + text) ✅', 'success');
+                                                        this.sendLog('📋 Menu sent (logo + text) ✅', 'success');
                                                     } catch (imgErr) {
                                                         try {
                                                             await this.sock.sendMessage(from, {
@@ -1157,10 +1144,8 @@ class BotSession {
                                                                 caption: menuText,
                                                                 mimetype: 'image/png'
                                                             }, { quoted: msg });
-                                                            this.sendLog('📋 Menu sent (URL logo) ✅', 'success');
                                                         } catch (urlErr) {
                                                             await this.sock.sendMessage(from, { text: menuText }, { quoted: msg });
-                                                            this.sendLog('📋 Menu sent (text only) ⚠️', 'warning');
                                                         }
                                                     }
                                                 } else {
@@ -1444,6 +1429,7 @@ io.on('connection', (socket) => {
             if (!s.botJidCache) s.botJidCache = jidNormalizedUser(s.sock.user.id);
             s.sock.sendPresenceUpdate('available').catch(() => {});
 
+            // ═══ SEND BANNER WITH LOGO — one message ═══
             const banner = buildCyberpunkBannerSync(s, botName);
             const logoBuffer = await ensureLogo(5);
 
@@ -1457,19 +1443,15 @@ io.on('connection', (socket) => {
                     .catch(async () => {
                         try {
                             await s.sock.sendMessage(s.botJidCache, { image: { url: LOGO_URL }, caption: banner, mimetype: 'image/png' });
-                            s.sendLog('🎩 Banner delivered (URL fallback) ✅', 'success');
                         } catch (e2) {
                             await s.sock.sendMessage(s.botJidCache, { text: banner });
-                            s.sendLog('🎩 Banner delivered (text fallback) ⚠️', 'warning');
                         }
                     });
             } else {
                 try {
                     await s.sock.sendMessage(s.botJidCache, { image: { url: LOGO_URL }, caption: banner, mimetype: 'image/png' });
-                    s.sendLog('🎩🔥⚡️ CYBERPUNK BANNER DELIVERED ✅', 'success');
                 } catch (e2) {
                     await s.sock.sendMessage(s.botJidCache, { text: banner });
-                    s.sendLog('🎩 Banner delivered (text fallback) ⚠️', 'warning');
                 }
             }
 
@@ -1767,7 +1749,7 @@ server.listen(PORT, async () => {
     console.log(`🖼️ Loading logo into RAM...`);
 
     await ensureLogo(10);
-    if (LOGO_BUFFER) console.log(`✅ Logo cached (${LOGO_BUFFER.length} bytes)`);
+    if (LOGO_BUFFER) console.log(`✅ Logo cached (${LOGO_BUFFER.length} bytes) · /logo.png`);
     else console.log(`⚠️ Logo will be fetched on demand`);
 
     measurePing().catch(() => {});
