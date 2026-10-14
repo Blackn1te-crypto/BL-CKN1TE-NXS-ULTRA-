@@ -1425,35 +1425,58 @@
             font-weight: 700; min-width: 40px;
             text-align: right;
         }
-        .gen-code-display {
-            text-align: center;
-            margin: 14px 0 6px;
-            padding: 14px;
-            background: radial-gradient(circle at center, rgba(0, 255, 157, 0.1), transparent 70%);
-            border: 1px dashed rgba(0, 255, 157, 0.4);
-            border-radius: 12px;
-            animation: codeReveal 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+        /* ═══════════════ NEW COMPACT CODE DISPLAY ═══════════════ */
+        .gen-code-line {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0 6px;
+            padding: 10px 14px;
+            background: rgba(0, 255, 157, 0.05);
+            border: 1px solid rgba(0, 255, 157, 0.35);
+            border-radius: 10px;
+            animation: codeReveal 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            flex-wrap: wrap;
         }
         @keyframes codeReveal {
-            from { opacity: 0; transform: scale(0.85); filter: blur(8px); }
-            to { opacity: 1; transform: scale(1); filter: blur(0); }
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .gen-code-display .label {
-            font-size: 0.6rem; letter-spacing: 3px;
+        .gen-code-line .label {
+            font-size: 0.6rem; letter-spacing: 2px;
             color: var(--muted); text-transform: uppercase;
-            margin-bottom: 8px;
             font-family: 'Orbitron', sans-serif;
+            flex-shrink: 0;
         }
-        .gen-code-display .value {
+        .gen-code-line .value {
             font-family: 'Orbitron', sans-serif;
-            font-weight: 900; font-size: 1.8rem;
-            letter-spacing: 6px;
+            font-weight: 900; font-size: 1.1rem;
+            letter-spacing: 4px;
             color: var(--primary);
-            text-shadow: 0 0 20px rgba(0, 255, 157, 0.9), 0 0 40px rgba(0, 255, 157, 0.5);
-            word-break: break-all;
+            text-shadow: 0 0 16px rgba(0, 255, 157, 0.7);
+            flex: 1;
+            min-width: 120px;
         }
-        .gen-actions { display: flex; gap: 10px; }
-        .gen-actions .btn-outline { flex: 1; margin-bottom: 0; }
+        .gen-code-line .copy-btn {
+            padding: 6px 14px;
+            background: rgba(0, 255, 157, 0.12);
+            border: 1px solid rgba(0, 255, 157, 0.4);
+            border-radius: 8px;
+            color: var(--primary);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700; font-size: 0.6rem;
+            letter-spacing: 1px; cursor: pointer;
+            transition: 0.2s;
+            display: flex; align-items: center; gap: 5px;
+            flex-shrink: 0;
+        }
+        .gen-code-line .copy-btn:hover {
+            background: rgba(0, 255, 157, 0.25);
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0,255,157,0.3);
+        }
+        .gen-code-line .copy-btn svg { width: 12px; height: 12px; }
 
         /* ═══════════════ FOOTER ═══════════════ */
         .footer {
@@ -1501,14 +1524,13 @@
             .hero-title { font-size: 1.5rem; letter-spacing: 2px; }
             .hero-sub { font-size: 0.6rem; letter-spacing: 3px; }
             .hero-logo-wrap { width: 120px; height: 120px; }
-            .pair-code-value { font-size: 1.9rem; letter-spacing: 6px; }
             .stats-grid { grid-template-columns: 1fr; }
             .side-drawer { width: 290px; left: -310px; }
-            .gen-code-display .value { font-size: 1.4rem; letter-spacing: 4px; }
             .container { padding: 20px 14px 60px; }
             .bot-row { flex-direction: column; }
             .suggest-btn { justify-content: center; padding: 12px; }
             .wa-btn { padding: 12px 20px; font-size: 0.75rem; }
+            .gen-code-line .value { font-size: 0.9rem; letter-spacing: 3px; }
         }
     </style>
 </head>
@@ -1866,23 +1888,23 @@
             </div>
         </div>
 
-        <!-- PAIRING CODE -->
+        <!-- PAIRING CODE (compact output) -->
         <div class="panel" id="codeCard" style="display: none;">
             <div class="panel-header">
                 <svg><use href="#i-key"/></svg>
                 <h5>YOUR PAIRING CODE</h5>
             </div>
             <div class="panel-body">
-                <div class="pair-code-display">
-                    <div class="pair-code-label">Enter this in WhatsApp → Linked Devices → Link with phone number</div>
-                    <div class="pair-code-value" id="pairingCode">----</div>
-                    <button class="btn-outline" id="copyCodeBtn">
+                <div class="gen-code-line">
+                    <span class="label">CODE</span>
+                    <span class="value" id="pairingCode">----</span>
+                    <button class="copy-btn" id="copyCodeBtn">
                         <svg><use href="#i-copy"/></svg>
-                        <span>COPY CODE</span>
+                        COPY
                     </button>
-                    <p class="hint-text" style="margin-top: 16px;">Code expires in a few minutes</p>
                 </div>
-                <button class="btn-outline btn-danger-outline" onclick="cancelCode()" style="margin-top: 16px;">
+                <p class="hint-text" style="margin-top: 10px; text-align: center;">Enter this in WhatsApp → Linked Devices → Link with phone number</p>
+                <button class="btn-outline btn-danger-outline" onclick="cancelCode()" style="margin-top: 14px;">
                     <svg><use href="#i-close"/></svg>
                     <span>CLOSE</span>
                 </button>
@@ -1901,7 +1923,7 @@
             </div>
         </div>
 
-        <!-- LIVE CONSOLE — MOVED TO BOTTOM -->
+        <!-- LIVE CONSOLE -->
         <div class="panel terminal-panel" id="consoleCard">
             <div class="panel-header terminal-header">
                 <div class="terminal-dots"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span></div>
@@ -2345,7 +2367,6 @@
                             if (socket && currentBotName) {
                                 socket.emit('bot-settings-update', { userId: currentBotName, settings: botSettings });
                             }
-                            // Update visual
                             const dot = el.querySelector('span');
                             if (botSettings[key]) {
                                 el.style.background = 'rgba(0,255,157,0.2)';
@@ -2593,7 +2614,6 @@
                         showToast(data?.message || 'Access denied', 'error', 6000);
                     });
 
-                    // Live user count from socket server
                     socket.on('users-online', (data) => {
                         onlineUsers = data?.count || 1;
                         const el = document.getElementById('onlineUsersCount');
@@ -2603,7 +2623,6 @@
                 } catch (e) { console.error('Socket init failed:', e); }
             }
 
-            // Send heartbeat for online count
             setInterval(() => {
                 if (socket) socket.emit('heartbeat');
             }, 15000);
@@ -2776,17 +2795,24 @@
                 genConsole_.scrollTop = genConsole_.scrollHeight;
             }
 
+            // ═══════════════ REVEAL PAIRING CODE (COMPACT) ═══════════════
             function revealPairingCode(code) {
                 if (!genConsole_) return;
                 genConsole_.querySelectorAll('.gen-cursor').forEach(c => c.remove());
-                const codeDiv = document.createElement('div');
-                codeDiv.className = 'gen-code-display';
-                codeDiv.innerHTML = `
-                    <div class="label">PAIRING CODE</div>
-                    <div class="value">${code}</div>
+
+                // Compact console line with copy button
+                const lineDiv = document.createElement('div');
+                lineDiv.className = 'gen-code-line';
+                lineDiv.innerHTML = `
+                    <span class="label">CODE</span>
+                    <span class="value">${code}</span>
+                    <button class="copy-btn" onclick="copyCodeFromConsole('${code}')">
+                        <svg><use href="#i-copy"/></svg> COPY
+                    </button>
                 `;
-                genConsole_.appendChild(codeDiv);
+                genConsole_.appendChild(lineDiv);
                 genConsole_.scrollTop = genConsole_.scrollHeight;
+
                 genLine('Code transmitted successfully', 'success', '✓');
                 genLine('Open WhatsApp → Linked Devices → Link with phone number', 'info', '◆');
 
@@ -2797,6 +2823,21 @@
                     document.getElementById('codeCard').style.display = 'block';
                 }, 500);
             }
+
+            // Global copy function for console
+            window.copyCodeFromConsole = function(code) {
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(code).then(() => showToast('Code copied ✅', 'success', 2000));
+                } else {
+                    const ta = document.createElement('textarea');
+                    ta.value = code;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    ta.remove();
+                    showToast('Code copied ✅', 'success', 2000);
+                }
+            };
 
             window.cancelGenerate = function () {
                 genAbort = true;
@@ -2910,7 +2951,6 @@
                     </div>
                 `).join('');
 
-                // Attach long-press handlers
                 document.querySelectorAll('.session-row').forEach(card => {
                     card.addEventListener('pointerdown', () => {
                         longPressTarget = card;
@@ -2943,7 +2983,6 @@
                     card.addEventListener('pointercancel', cancelPress);
                     card.addEventListener('contextmenu', (e) => e.preventDefault());
 
-                    // Regular tap → open view modal
                     card.addEventListener('click', (e) => {
                         if (e.target.closest('button')) return;
                         if (card.classList.contains('pressing')) return;
@@ -3044,7 +3083,6 @@
                 } catch (e) { updateTermStatus('ping', 'TIMEOUT'); }
             }
 
-            // Fetch system disk + ram via stats endpoint
             async function pollSysStats() {
                 try {
                     const r = await fetch('/api/json/stats', { cache: 'no-store' });
