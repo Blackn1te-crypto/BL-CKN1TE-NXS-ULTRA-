@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>BL@CKN1TE-NXS-ULTRA · Access Terminal</title>
-    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/Blackn1te-crypto/BLACKN1TE-NXS/main/logo.png">
+    <link rel="icon" type="image/png" href="/logo.png">
     <meta name="theme-color" content="#05070d">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -36,7 +36,7 @@
         }
 
         /* ═══════════════════════════════════════════════════════
-           STAGE 1 · CENTERED CINEMATIC INTRO (5 seconds)
+           STAGE 1 · CINEMATIC INTRO (5 seconds exact)
            ═══════════════════════════════════════════════════════ */
         #stage-intro {
             position: fixed;
@@ -47,14 +47,14 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            will-change: opacity;
+            transition: opacity 0.6s ease;
         }
         #stage-intro.hide {
             opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.9s ease, visibility 0.9s ease;
+            pointer-events: none;
         }
 
-        /* Background grid — no animation drift, just fade in */
         .intro-grid {
             position: absolute;
             inset: 0;
@@ -63,14 +63,13 @@
                 linear-gradient(90deg, rgba(0, 255, 157, 0.08) 1px, transparent 1px);
             background-size: 70px 70px;
             opacity: 0;
-            animation: introGridIn 1.2s 0.2s ease-out forwards;
+            animation: introGridIn 1.2s 0.1s ease-out forwards;
             pointer-events: none;
         }
         @keyframes introGridIn {
             to { opacity: 0.9; }
         }
 
-        /* Radial glow breathing */
         .intro-glow {
             position: absolute;
             inset: 0;
@@ -81,21 +80,21 @@
             animation: introGlow 3s ease-in-out infinite;
             pointer-events: none;
             z-index: 2;
+            will-change: opacity, transform;
         }
         @keyframes introGlow {
             0%, 100% { opacity: 0.75; transform: scale(1); }
             50% { opacity: 1; transform: scale(1.08); }
         }
 
-        /* ⚡ HIGH-INTENSITY LIGHTNING CANVAS ⚡ */
         #lightningCanvas {
             position: absolute;
             inset: 0;
             z-index: 3;
             pointer-events: none;
+            will-change: contents;
         }
 
-        /* Horizontal scan line sweeping down */
         .intro-scanline {
             position: absolute;
             left: 0; right: 0;
@@ -105,6 +104,7 @@
             animation: scanSweep 2.5s ease-in-out infinite;
             z-index: 6;
             opacity: 0.9;
+            will-change: top, opacity;
         }
         @keyframes scanSweep {
             0% { top: -5%; opacity: 0; }
@@ -113,7 +113,6 @@
             100% { top: 105%; opacity: 0; }
         }
 
-        /* Particles */
         .intro-particles {
             position: absolute;
             inset: 0;
@@ -126,15 +125,15 @@
             border-radius: 50%;
             animation: particleRise 4s linear infinite;
             opacity: 0.9;
+            will-change: transform, opacity;
         }
         @keyframes particleRise {
-            0% { transform: translateY(100vh) scale(0.3); opacity: 0; }
+            0% { transform: translate3d(0, 100vh, 0) scale(0.3); opacity: 0; }
             15% { opacity: 1; }
             85% { opacity: 1; }
-            100% { transform: translateY(-20vh) scale(1.3); opacity: 0; }
+            100% { transform: translate3d(0, -20vh, 0) scale(1.3); opacity: 0; }
         }
 
-        /* Flash bursts synced to lightning */
         .intro-flash {
             position: absolute;
             inset: 0;
@@ -158,7 +157,7 @@
             90% { opacity: 0; }
         }
 
-        /* ═══ FULLY CENTERED HERO — logo + text stacked ═══ */
+        /* ═══ CENTERED HERO ═══ */
         .intro-center {
             position: relative;
             z-index: 15;
@@ -171,7 +170,6 @@
             max-width: 100vw;
         }
 
-        /* LOGO WITH SPINNING OVERLAY */
         .intro-logo-wrap {
             position: relative;
             width: 200px;
@@ -180,6 +178,7 @@
             opacity: 0;
             transform: scale(0.3);
             animation: logoEnter 1.2s 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            will-change: transform, opacity, filter;
         }
         @keyframes logoEnter {
             0% { opacity: 0; transform: scale(0.3); filter: blur(25px) brightness(3); }
@@ -187,12 +186,12 @@
             100% { opacity: 1; transform: scale(1); filter: blur(0) brightness(1); }
         }
 
-        /* 4 spinning rings */
         .intro-ring {
             position: absolute;
             border-radius: 50%;
             border: 2px solid transparent;
             pointer-events: none;
+            will-change: transform;
         }
         .intro-ring.r1 {
             inset: -18px;
@@ -229,9 +228,10 @@
             border-radius: 46px;
             overflow: hidden;
             border: 3px solid rgba(0, 255, 157, 0.75);
-            background: #0a0f1a;
+            background: radial-gradient(circle at center, #0a0f1a, #05070d);
             z-index: 2;
             animation: introLogoGlow 1.8s ease-in-out infinite;
+            will-change: box-shadow;
         }
         @keyframes introLogoGlow {
             0%, 100% {
@@ -249,9 +249,14 @@
                     inset 0 0 60px rgba(0, 255, 157, 0.5);
             }
         }
-        .intro-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .intro-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            padding: 8px;
+        }
 
-        /* Shockwaves */
         .intro-shockwave {
             position: absolute;
             top: 50%; left: 50%;
@@ -263,6 +268,7 @@
             pointer-events: none;
             box-shadow: 0 0 50px #00ff9d, inset 0 0 50px #00ff9d;
             z-index: 5;
+            will-change: transform, opacity;
         }
         .intro-shockwave.s1 { animation: shockwave 5s ease-out infinite; animation-delay: 1s; }
         .intro-shockwave.s2 { animation: shockwave 5s ease-out infinite; animation-delay: 1.5s; border-color: #06b6d4; box-shadow: 0 0 50px #06b6d4, inset 0 0 50px #06b6d4; }
@@ -274,7 +280,6 @@
             100% { transform: scale(3.2); opacity: 0; }
         }
 
-        /* ═══ BRAND TEXT — centered under logo ═══ */
         .intro-brand {
             display: flex;
             flex-direction: column;
@@ -282,6 +287,7 @@
             gap: 12px;
             opacity: 0;
             animation: brandEnter 0.9s 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            will-change: opacity, transform, filter;
         }
         @keyframes brandEnter {
             from { opacity: 0; transform: translateY(20px); letter-spacing: 25px; filter: blur(8px); }
@@ -314,7 +320,6 @@
             text-align: center;
         }
 
-        /* ═══ READY TEXT + LOADER — centered under brand ═══ */
         .intro-ready-wrap {
             margin-top: 42px;
             display: flex;
@@ -323,6 +328,7 @@
             gap: 14px;
             opacity: 0;
             animation: readyEnter 0.8s 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            will-change: opacity, transform, filter;
         }
         @keyframes readyEnter {
             from { opacity: 0; transform: translateY(24px) scale(0.9); filter: blur(10px); }
@@ -384,6 +390,7 @@
             background-size: 300% auto;
             box-shadow: 0 0 22px #00ff9d, 0 0 44px #06b6d4;
             animation: loaderFill 3s 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards, gradientSlide 1.5s linear infinite;
+            will-change: width;
         }
         @keyframes loaderFill {
             0% { width: 0%; }
@@ -403,7 +410,6 @@
             text-align: center;
         }
 
-        /* Bottom watermark — centered */
         .intro-watermark {
             position: absolute;
             bottom: 30px;
@@ -421,7 +427,6 @@
             to { opacity: 1; }
         }
 
-        /* Film overlays */
         .intro-scanlines {
             position: absolute;
             inset: 0;
@@ -455,11 +460,11 @@
             animation: grainShift 0.3s steps(3) infinite;
         }
         @keyframes grainShift {
-            0%, 100% { transform: translate(0, 0); }
-            20% { transform: translate(-3%, 2%); }
-            40% { transform: translate(2%, -3%); }
-            60% { transform: translate(-2%, -2%); }
-            80% { transform: translate(3%, 3%); }
+            0%, 100% { transform: translate3d(0, 0, 0); }
+            20% { transform: translate3d(-3%, 2%, 0); }
+            40% { transform: translate3d(2%, -3%, 0); }
+            60% { transform: translate3d(-2%, -2%, 0); }
+            80% { transform: translate3d(3%, 3%, 0); }
         }
 
         /* ═══════════════════════════════════════════════════════
@@ -546,8 +551,13 @@
             overflow: hidden;
             border: 2px solid rgba(0, 255, 157, 0.45);
             box-shadow: 0 0 36px rgba(0, 255, 157, 0.55);
+            background: radial-gradient(circle at center, #0a0f1a, #05070d);
         }
-        .login-logo img { width: 100%; height: 100%; object-fit: cover; }
+        .login-logo img {
+            width: 100%; height: 100%;
+            object-fit: contain;
+            padding: 4px;
+        }
 
         .login-title {
             font-family: 'Orbitron', sans-serif;
@@ -849,6 +859,7 @@
             border: 3px solid rgba(0, 255, 157, 0.75);
             z-index: 2;
             animation: bootLogoPulse 1.6s ease-in-out infinite;
+            background: radial-gradient(circle at center, #0a0f1a, #05070d);
         }
         @keyframes bootLogoPulse {
             0%, 100% {
@@ -858,7 +869,13 @@
                 box-shadow: 0 0 70px rgba(0, 255, 157, 1), 0 0 140px rgba(6, 182, 212, 0.85), inset 0 0 50px rgba(0, 255, 157, 0.5);
             }
         }
-        .boot-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .boot-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            padding: 8px;
+        }
 
         .boot-pulse {
             position: absolute;
@@ -1003,7 +1020,6 @@
         .toast.error svg { color: #ff3b5c; }
         .toast.info svg { color: #06b6d4; }
 
-        /* Mobile */
         @media (max-width: 520px) {
             .intro-logo-wrap { width: 150px; height: 150px; }
             .intro-brand-main { font-size: 1.15rem; letter-spacing: 4px; }
@@ -1033,7 +1049,7 @@
     </svg>
 
     <!-- ═══════════════════════════════════════════════════════
-         STAGE 1 · CENTERED CINEMATIC INTRO (5 seconds)
+         STAGE 1 · CINEMATIC INTRO (5 seconds exact)
          ═══════════════════════════════════════════════════════ -->
     <div id="stage-intro">
         <div class="intro-grid"></div>
@@ -1042,10 +1058,7 @@
         <div class="intro-scanline"></div>
         <div class="intro-particles" id="introParticles"></div>
 
-        <!-- EVERYTHING CENTERED IN A COLUMN -->
         <div class="intro-center">
-
-            <!-- Logo with spinning overlay -->
             <div class="intro-logo-wrap">
                 <div class="intro-ring r1"></div>
                 <div class="intro-ring r2"></div>
@@ -1055,17 +1068,17 @@
                 <div class="intro-shockwave s2"></div>
                 <div class="intro-shockwave s3"></div>
                 <div class="intro-logo">
-                    <img src="https://raw.githubusercontent.com/Blackn1te-crypto/BLACKN1TE-NXS/main/logo.png" alt="BL@CKN1TE-NXS">
+                    <!-- PNG LOGO with local fallback -->
+                    <img id="introLogoImg" src="https://raw.githubusercontent.com/Blackn1te-crypto/BLACKN1TE-NXS/main/logo.png" alt="BL@CKN1TE-NXS"
+                         onerror="if(this.src!=='/logo.png'){this.src='/logo.png';}">
                 </div>
             </div>
 
-            <!-- Brand text -->
             <div class="intro-brand">
                 <div class="intro-brand-main">BL@CKN1TE-NXS-ULTRA</div>
                 <div class="intro-brand-tag">THE INCISIVE TRI-HAT HACKER</div>
             </div>
 
-            <!-- READY + Loader -->
             <div class="intro-ready-wrap">
                 <div class="intro-ready">READY</div>
                 <div class="intro-loader">
@@ -1075,7 +1088,6 @@
                     <div class="intro-loader-pct" id="introPct">0%</div>
                 </div>
             </div>
-
         </div>
 
         <div class="intro-watermark">© 2026 · ULTRA EDITION</div>
@@ -1096,7 +1108,8 @@
             <div class="login-logo-wrap">
                 <div class="login-logo-ring"></div>
                 <div class="login-logo">
-                    <img src="https://raw.githubusercontent.com/Blackn1te-crypto/BLACKN1TE-NXS/main/logo.png" alt="Logo">
+                    <img src="https://raw.githubusercontent.com/Blackn1te-crypto/BLACKN1TE-NXS/main/logo.png" alt="Logo"
+                         onerror="if(this.src!=='/logo.png'){this.src='/logo.png';}">
                 </div>
             </div>
 
@@ -1156,7 +1169,8 @@
                 <div class="boot-ring c"></div>
                 <div class="boot-ring d"></div>
                 <div class="boot-logo">
-                    <img src="https://raw.githubusercontent.com/Blackn1te-crypto/BLACKN1TE-NXS/main/logo.png" alt="Loading">
+                    <img src="https://raw.githubusercontent.com/Blackn1te-crypto/BLACKN1TE-NXS/main/logo.png" alt="Loading"
+                         onerror="if(this.src!=='/logo.png'){this.src='/logo.png';}">
                 </div>
             </div>
 
@@ -1187,7 +1201,7 @@
         (function () {
             'use strict';
 
-            // ═══════════════ AUDIO ═══════════════
+            // ═══════════════ AUDIO (safe, silent-fail) ═══════════════
             let audioCtx = null;
             let audioEnabled = false;
 
@@ -1218,30 +1232,6 @@
             }
 
             function playTypingBeep() { playTone(880 + Math.random() * 120, 0.04, 'square', 0.03); }
-
-            function playThunderCrack() {
-                if (!audioEnabled || !audioCtx) return;
-                try {
-                    const bufferSize = audioCtx.sampleRate * 0.5;
-                    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-                    const data = buffer.getChannelData(0);
-                    for (let i = 0; i < bufferSize; i++) {
-                        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 3);
-                    }
-                    const src = audioCtx.createBufferSource();
-                    src.buffer = buffer;
-                    const filter = audioCtx.createBiquadFilter();
-                    filter.type = 'lowpass';
-                    filter.frequency.value = 600;
-                    const gain = audioCtx.createGain();
-                    gain.gain.value = 0.14;
-                    src.connect(filter);
-                    filter.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    src.start();
-                } catch (e) {}
-            }
-
             function playWhoosh() {
                 if (!audioEnabled || !audioCtx) return;
                 try {
@@ -1258,13 +1248,11 @@
                     osc.stop(audioCtx.currentTime + 0.3);
                 } catch (e) {}
             }
-
             function playSuccessChime() {
                 playTone(660, 0.15, 'sine', 0.1);
                 setTimeout(() => playTone(880, 0.15, 'sine', 0.1), 100);
                 setTimeout(() => playTone(1320, 0.25, 'sine', 0.12), 200);
             }
-
             function playErrorBuzz() {
                 playTone(220, 0.15, 'sawtooth', 0.08);
                 setTimeout(() => playTone(180, 0.2, 'sawtooth', 0.08), 100);
@@ -1274,16 +1262,18 @@
                 if (!audioCtx) initAudio();
                 if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
             }
-            document.addEventListener('touchstart', unlockAudio, { once: true });
+            document.addEventListener('touchstart', unlockAudio, { once: true, passive: true });
             document.addEventListener('click', unlockAudio, { once: true });
             document.addEventListener('keydown', unlockAudio, { once: true });
 
-            // ═══════════════ LIGHTNING CANVAS — MAX INTENSITY ═══════════════
+            // ═══════════════ LIGHTNING CANVAS (optimized) ═══════════════
+            let introActive = true;
             (function lightningCanvas() {
                 const canvas = document.getElementById('lightningCanvas');
                 if (!canvas) return;
-                const ctx = canvas.getContext('2d');
-                let W, H, bolts = [];
+                const ctx = canvas.getContext('2d', { alpha: true });
+                let W = 0, H = 0, bolts = [];
+                let rafId = null;
 
                 function resize() {
                     W = canvas.width = window.innerWidth;
@@ -1314,12 +1304,15 @@
                 }
 
                 function draw() {
+                    if (!introActive) {
+                        if (rafId) cancelAnimationFrame(rafId);
+                        rafId = null;
+                        return;
+                    }
                     ctx.clearRect(0, 0, W, H);
 
-                    // Very frequent strikes
                     if (Math.random() < 0.09) {
                         bolts.push(makeBolt());
-                        if (Math.random() < 0.5) playThunderCrack();
                     }
 
                     bolts = bolts.filter(b => b.life < b.maxLife);
@@ -1338,7 +1331,6 @@
                         }
                         ctx.stroke();
 
-                        // Branches
                         if (Math.random() < 0.7) {
                             const idx = Math.floor(Math.random() * b.segments.length);
                             const pt = b.segments[idx];
@@ -1358,17 +1350,18 @@
                     });
                     ctx.globalAlpha = 1;
                     ctx.shadowBlur = 0;
-                    requestAnimationFrame(draw);
+                    rafId = requestAnimationFrame(draw);
                 }
                 draw();
             })();
 
-            // ═══════════════ PARTICLES ═══════════════
+            // ═══════════════ PARTICLES (30 max) ═══════════════
             (function spawnParticles() {
                 const wrap = document.getElementById('introParticles');
                 if (!wrap) return;
                 const colors = ['#00ff9d', '#06b6d4', '#7c3aed'];
-                for (let i = 0; i < 60; i++) {
+                const frag = document.createDocumentFragment();
+                for (let i = 0; i < 30; i++) {
                     const p = document.createElement('div');
                     p.className = 'particle';
                     p.style.left = Math.random() * 100 + '%';
@@ -1377,21 +1370,23 @@
                     const c = colors[Math.floor(Math.random() * colors.length)];
                     p.style.background = c;
                     p.style.boxShadow = `0 0 12px ${c}, 0 0 24px ${c}`;
-                    wrap.appendChild(p);
+                    frag.appendChild(p);
                 }
+                wrap.appendChild(frag);
             })();
 
-            // ═══════════════ INTRO % COUNTER ═══════════════
+            // ═══════════════ INTRO % COUNTER (0→100 over 3s, starting at 1.5s) ═══════════════
             (function introCounter() {
                 const el = document.getElementById('introPct');
                 if (!el) return;
-                const startTime = Date.now() + 1500;
                 const targets = [0, 15, 32, 55, 78, 92, 100];
                 const times = [0, 400, 900, 1500, 2100, 2700, 3000];
                 let idx = 0;
+                const t0 = performance.now() + 1500;
 
-                function tick() {
-                    const elapsed = Date.now() - startTime;
+                function tick(now) {
+                    if (!introActive) return;
+                    const elapsed = now - t0;
                     if (elapsed < 0) { requestAnimationFrame(tick); return; }
                     if (idx >= times.length) return;
                     if (elapsed >= times[idx]) {
@@ -1400,7 +1395,7 @@
                     }
                     if (idx < times.length) requestAnimationFrame(tick);
                 }
-                setTimeout(() => requestAnimationFrame(tick), 1500);
+                requestAnimationFrame(tick);
             })();
 
             // ═══════════════ TOAST ═══════════════
@@ -1420,19 +1415,22 @@
                 }, duration);
             }
 
-            // ═══════════════ STAGE 1 → STAGE 2 (5 seconds exactly) ═══════════════
-            setTimeout(() => {
+            // ═══════════════ STAGE 1 → STAGE 2 (exact 5 seconds) ═══════════════
+            function goToLogin() {
+                introActive = false; // stops RAF loop + counter
                 const intro = document.getElementById('stage-intro');
                 const login = document.getElementById('stage-login');
                 playWhoosh();
                 intro.classList.add('hide');
                 setTimeout(() => {
+                    intro.style.display = 'none';
                     login.classList.add('show');
                     setTimeout(() => document.getElementById('username')?.focus(), 400);
-                }, 500);
-            }, 5000);
+                }, 600);
+            }
 
             // ═══════════════ AUTO-REDIRECT IF ALREADY LOGGED IN ═══════════════
+            let alreadyLoggedIn = false;
             try {
                 const SESSION_KEY = 'nexusAuth';
                 const SESSION_TTL = 30 * 60 * 1000;
@@ -1440,12 +1438,24 @@
                 if (raw) {
                     const s = JSON.parse(raw);
                     if (s.timestamp && (Date.now() - s.timestamp < SESSION_TTL)) {
-                        setTimeout(() => {
-                            window.location.replace('/index.html');
-                        }, 500);
+                        alreadyLoggedIn = true;
                     }
                 }
             } catch (e) {}
+
+            if (alreadyLoggedIn) {
+                // Skip intro and login, go straight to bootloader → dashboard
+                setTimeout(() => {
+                    introActive = false;
+                    document.getElementById('stage-intro').style.display = 'none';
+                    document.getElementById('stage-login').style.display = 'none';
+                    document.getElementById('stage-boot').classList.add('show');
+                    startBootloader();
+                }, 400);
+            } else {
+                // Full 5s intro then login
+                setTimeout(goToLogin, 5000);
+            }
 
             // ═══════════════ PASSWORD TOGGLE ═══════════════
             document.getElementById('togglePass')?.addEventListener('click', function () {
@@ -1469,8 +1479,6 @@
             });
 
             // ═══════════════ VALID CREDENTIALS ═══════════════
-            // Username: Bl@ckn1te (case-insensitive)
-            // Password: 0506
             const VALID_USERS = {
                 'bl@ckn1te': '0506'
             };
