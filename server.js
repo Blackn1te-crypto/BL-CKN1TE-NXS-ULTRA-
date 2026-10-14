@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
-//  BL@CKN1TE-NXS-ULTRA · SERVER v16 · MEGA ULTIMATE
-//  The Incisive Tri-Hat Hacker
+//  BL@CKN1TE-NXS-ULTRA · SERVER v17 · MEGA ULTIMATE
+//  The Incisive Tri-Hat Hacker · PERMANENT CONNECTION · INSTANT RESPONSE
 // ═══════════════════════════════════════════════════════════════════
 
 require('dotenv').config();
@@ -12,7 +12,6 @@ const fs = require('fs-extra');
 const path = require('path');
 const axios = require('axios');
 const os = require('os');
-const NodeCache = require('node-cache');
 const {
     default: makeWASocket,
     useMultiFileAuthState,
@@ -29,13 +28,11 @@ const { OpenAI } = require('openai');
 
 // ═══════════════ SETTINGS ═══════════════
 let settings;
-try {
-    settings = require('./settings');
-} catch (e) {
-    console.log('⚠️  settings.js not found — using defaults');
+try { settings = require('./settings'); }
+catch (e) {
     settings = {
         botName: 'BL@CKN1TE-NXS',
-        botVersion: 'V16-ULTRA',
+        botVersion: 'V17-ULTRA',
         ownerName: 'BL@CKN1TE',
         ownerNumber: '263714799483',
         channelUrl: 'https://whatsapp.com/channel/0029VbDubJNHbFV50Y6oiO3f',
@@ -48,8 +45,6 @@ try {
 const PREFIXES = settings.prefixes || ['.', '/', '>'];
 const OWNER_SECRET = process.env.OWNER_SECRET || 'blacknite_owner_2025';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'blacknite_session_2025';
-const PANEL_USER = process.env.PANEL_USER || 'blacknite';
-const PANEL_PASS = process.env.PANEL_PASS || 'ultra2026';
 const CHANNEL_URL = settings.channelUrl || 'https://whatsapp.com/channel/0029VbDubJNHbFV50Y6oiO3f';
 const LOGO_URL = settings.logoUrl || 'https://raw.githubusercontent.com/Blackn1te-crypto/BLACKN1TE-NXS/main/logo.png';
 const CMD_DIR = path.join(__dirname, 'commands');
@@ -57,92 +52,66 @@ const LOCAL_LOGO = path.join(__dirname, 'logo.png');
 
 // ═══════════════ RUNTIME FLAGS ═══════════════
 const INFINITE_MODE = true;
-const SILENT_RECONNECT = true;
+const SILENT_RECONNECT = false;       // Disabled — permanent connection
+const PERMANENT_CONNECTION = true;    // Never reconnect unless STOP/TERMINATE
 const PROMax_SPEED = true;
-const LIFETIME_CONNECTION = true;
 
-const HEARTBEAT_INTERVAL_MS = 30 * 1000;
-const AUTO_RELOAD_INTERVAL_MS = 3 * 60 * 1000;
-const SESSION_WATCHDOG_MS = 45 * 1000;
-const KEEPALIVE_PRESENCE_MS = 30 * 1000;
-const ACTIVE_CHECK_INTERVAL_MS = 45 * 60 * 1000;
+const HEARTBEAT_INTERVAL_MS = 60 * 1000;
+const SESSION_WATCHDOG_MS = 5 * 60 * 1000;   // Rare check only
+const KEEPALIVE_PRESENCE_MS = 45 * 1000;
+const KEEP_ALIVE_INTERVAL_MS = 15000;
 const CONNECT_TIMEOUT_MS = 20000;
-const DEFAULT_QUERY_TIMEOUT_MS = 20000;
-const KEEP_ALIVE_INTERVAL_MS = 10000;
-const RETRY_REQUEST_DELAY_MS = 300;
+const DEFAULT_QUERY_TIMEOUT_MS = 15000;
+const RETRY_REQUEST_DELAY_MS = 200;
 const MAX_MSG_RETRY_COUNT = 3;
-const RECONNECT_SILENCE_WINDOW_MS = 120000;
 
-// ═══════════════ LOGO BUFFER CACHE ═══════════════
+// ═══════════════ LOGO BUFFER (PRELOADED) ═══════════════
 let LOGO_BUFFER = null;
 let LOGO_LOADING = false;
+let LOGO_BASE64 = null;
 
 async function preloadLogo() {
-    if (LOGO_BUFFER || LOGO_LOADING) return LOGO_BUFFER;
+    if (LOGO_BUFFER && LOGO_BUFFER.length > 0) return LOGO_BUFFER;
+    if (LOGO_LOADING) {
+        while (LOGO_LOADING) await delay(50);
+        return LOGO_BUFFER;
+    }
     LOGO_LOADING = true;
-
-    // 1. Try local file first
     try {
         if (fs.existsSync(LOCAL_LOGO)) {
             LOGO_BUFFER = fs.readFileSync(LOCAL_LOGO);
-            console.log(`✅ [LOGO] Local file cached (${LOGO_BUFFER.length} bytes)`);
-            LOGO_LOADING = false;
-            return LOGO_BUFFER;
+            console.log(`✅ [LOGO] Local cached (${LOGO_BUFFER.length} bytes)`);
+        } else {
+            const res = await axios.get(LOGO_URL, { responseType: 'arraybuffer', timeout: 15000 });
+            LOGO_BUFFER = Buffer.from(res.data);
+            try { fs.writeFileSync(LOCAL_LOGO, LOGO_BUFFER); } catch (_) {}
+            console.log(`✅ [LOGO] Fetched from URL (${LOGO_BUFFER.length} bytes)`);
         }
-    } catch (e) { console.error('Local logo read failed:', e.message); }
-
-    // 2. Fetch from GitHub
-    try {
-        const res = await axios.get(LOGO_URL, { responseType: 'arraybuffer', timeout: 15000 });
-        LOGO_BUFFER = Buffer.from(res.data);
-        console.log(`✅ [LOGO] Fetched from URL (${LOGO_BUFFER.length} bytes)`);
-        // Save to local for next time
-        try { fs.writeFileSync(LOCAL_LOGO, LOGO_BUFFER); } catch (_) {}
     } catch (e) {
         console.error(`⚠️ [LOGO] Preload failed: ${e.message}`);
     }
-
     LOGO_LOADING = false;
     return LOGO_BUFFER;
 }
 
-async function getLogoBuffer() {
-    if (LOGO_BUFFER && LOGO_BUFFER.length > 0) return LOGO_BUFFER;
-    return await preloadLogo();
-}
-
-async function ensureLogo(retries = 5) {
-    for (let i = 0; i < retries; i++) {
-        const buf = await getLogoBuffer();
-        if (buf && buf.length > 0) return buf;
-        await delay(1500);
-    }
-    return null;
+function getLogoBuffer() {
+    return (LOGO_BUFFER && LOGO_BUFFER.length > 0) ? LOGO_BUFFER : null;
 }
 
 // ═══════════════ SAFE COMMAND LOADER ═══════════════
 function safeRequire(filePath, name) {
     try {
         if (fs.existsSync(filePath) || fs.existsSync(filePath + '.js')) {
-            console.log(`✅ [CMD] Loaded: ${name}`);
+            console.log(`✅ [CMD] ${name}`);
             return require(filePath);
         }
-        console.log(`⚠️  [CMD] Skipped (missing): ${name}`);
         return async function stub(sock, from, msg) {
-            try {
-                await sock.sendMessage(from, {
-                    text: `⚠️ *Command .${name} is not available in this build.*\n\n_Contact owner for support._`
-                }, { quoted: msg });
-            } catch (e) {}
+            try { await sock.sendMessage(from, { text: `⚠️ *Command .${name} not available.*` }, { quoted: msg }); } catch (e) {}
         };
     } catch (e) {
-        console.error(`❌ [CMD] Failed: ${name}: ${e.message}`);
+        console.error(`❌ [CMD] ${name}: ${e.message}`);
         return async function stub(sock, from, msg) {
-            try {
-                await sock.sendMessage(from, {
-                    text: `⚠️ *Command .${name} is temporarily offline.*\n\n_Retry shortly._`
-                }, { quoted: msg });
-            } catch (e) {}
+            try { await sock.sendMessage(from, { text: `⚠️ *Command .${name} offline.*` }, { quoted: msg }); } catch (e) {}
         };
     }
 }
@@ -196,20 +165,11 @@ const commands = {
     settings: safeRequire(path.join(CMD_DIR, 'settings'), 'settings')
 };
 
-// ═══════════════ HOOK LOADERS ═══════════════
 let handleAutoread = async () => {};
 let autoreadCommand = null;
-try {
-    if (fs.existsSync(path.join(CMD_DIR, 'autoread.js'))) {
-        const ar = require(path.join(CMD_DIR, 'autoread'));
-        if (ar.handleAutoread) handleAutoread = ar.handleAutoread;
-        if (ar.autoreadCommand) autoreadCommand = ar.autoreadCommand;
-    }
-} catch (e) {}
-
+try { if (fs.existsSync(path.join(CMD_DIR, 'autoread.js'))) { const ar = require(path.join(CMD_DIR, 'autoread')); if (ar.handleAutoread) handleAutoread = ar.handleAutoread; if (ar.autoreadCommand) autoreadCommand = ar.autoreadCommand; } } catch (e) {}
 let handleStatusUpdate = async () => {};
 try { if (fs.existsSync(path.join(CMD_DIR, 'autostatus.js'))) { const su = require(path.join(CMD_DIR, 'autostatus')); if (su.handleStatusUpdate) handleStatusUpdate = su.handleStatusUpdate; } } catch (e) {}
-
 let storeMessage = async () => {};
 let handleMessageRevocation = async () => {};
 try { if (fs.existsSync(path.join(CMD_DIR, 'antidelete.js'))) { const ad = require(path.join(CMD_DIR, 'antidelete')); if (ad.storeMessage) storeMessage = ad.storeMessage; if (ad.handleMessageRevocation) handleMessageRevocation = ad.handleMessageRevocation; } } catch (e) {}
@@ -234,7 +194,7 @@ if (process.env.OPENAI_API_KEY) {
             apiKey: process.env.OPENAI_API_KEY,
             baseURL: process.env.AI_BASE_URL || "https://api.openai.com/v1"
         });
-        console.log(`✅ [AI] Ready (${process.env.AI_MODEL || 'llama-3.1-8b-instant'})`);
+        console.log(`✅ [AI] Ready`);
     } catch (e) { console.error('❌ [AI] Init failed:', e.message); }
 }
 
@@ -259,37 +219,29 @@ app.get('/dashboard.html', (req, res) => { res.sendFile(path.join(__dirname, 'in
 app.get('/index.html', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
 app.get('/welcome', (req, res) => { res.redirect('/login.html'); });
 
-// ═══════════════ LOGO BUFFER ENDPOINT ═══════════════
+// ═══════════════ LOGO ENDPOINTS ═══════════════
 app.get('/logo.png', async (req, res) => {
     try {
-        const buf = await getLogoBuffer();
-        if (buf && buf.length > 0) {
+        const buf = getLogoBuffer();
+        if (buf) {
             res.set('Content-Type', 'image/png');
             res.set('Cache-Control', 'public, max-age=86400');
             res.set('Content-Disposition', 'inline; filename="bl@ckn1te-nxs-logo.png"');
-            res.send(buf);
-        } else {
-            res.redirect(LOGO_URL);
+            return res.send(buf);
         }
-    } catch (e) {
         res.redirect(LOGO_URL);
-    }
+    } catch (e) { res.redirect(LOGO_URL); }
 });
 
-// Download endpoint — user can save logo file
 app.get('/download-logo', async (req, res) => {
     try {
-        const buf = await getLogoBuffer();
-        if (buf && buf.length > 0) {
+        const buf = getLogoBuffer() || await preloadLogo();
+        if (buf) {
             res.set('Content-Type', 'image/png');
             res.set('Content-Disposition', 'attachment; filename="bl@ckn1te-nxs-logo.png"');
             res.send(buf);
-        } else {
-            res.status(404).json({ error: 'Logo not cached yet' });
-        }
-    } catch (e) {
-        res.status(500).json({ error: e.message });
-    }
+        } else res.status(404).json({ error: 'Logo not cached' });
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ═══════════════ AUTH ═══════════════
@@ -297,30 +249,20 @@ app.post('/api/login', (req, res) => {
     try {
         const { username, password } = req.body || {};
         if (!username || !password) return res.status(400).json({ success: false, error: 'Missing credentials' });
-
         const validUser = 'bl@ckn1te';
         const validPass = '0506';
-
         if (username.toLowerCase() === validUser && password === validPass) {
             const sessionToken = require('crypto').randomBytes(24).toString('hex');
             req.session.user = username;
             req.session.token = sessionToken;
             req.session.timestamp = Date.now();
-            return res.json({
-                success: true,
-                user: username,
-                token: sessionToken,
-                timestamp: req.session.timestamp,
-                redirect: '/index.html'
-            });
+            return res.json({ success: true, user: username, token: sessionToken, timestamp: req.session.timestamp, redirect: '/index.html' });
         }
         return res.status(401).json({ success: false, error: 'Invalid operator ID or access key' });
-    } catch (e) {
-        res.status(500).json({ success: false, error: e.message });
-    }
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
-// ═══════════════ MONITORING HELPERS ═══════════════
+// ═══════════════ MONITORING ═══════════════
 let cachedPing = -1;
 let cachedPingTime = 0;
 
@@ -332,9 +274,7 @@ async function measurePing() {
         cachedPing = Date.now() - start;
         cachedPingTime = Date.now();
         return cachedPing;
-    } catch (e) {
-        return cachedPing > 0 ? cachedPing : -1;
-    }
+    } catch (e) { return cachedPing > 0 ? cachedPing : -1; }
 }
 
 function getSystemStats() {
@@ -345,11 +285,7 @@ function getSystemStats() {
     const cpuLoad = os.loadavg()[0].toFixed(2);
     const uptimeSec = Math.floor(process.uptime());
     return {
-        memory: {
-            total: (totalMem / 1024 / 1024).toFixed(0) + ' MB',
-            used: (usedMem / 1024 / 1024).toFixed(0) + ' MB',
-            percent: memPercent + '%'
-        },
+        memory: { total: (totalMem / 1024 / 1024).toFixed(0) + ' MB', used: (usedMem / 1024 / 1024).toFixed(0) + ' MB', percent: memPercent + '%' },
         cpu: cpuLoad,
         uptime: uptimeSec,
         uptimeHuman: formatUptime(uptimeSec),
@@ -379,7 +315,7 @@ function formatUptime(sec) {
     return `${s}s`;
 }
 
-// ═══════════════ HEALTH + BADGE ═══════════════
+// ═══════════════ HEALTH ═══════════════
 app.get('/health', (req, res) => {
     res.set('Cache-Control', 'no-store');
     const sys = getSystemStats();
@@ -387,7 +323,7 @@ app.get('/health', (req, res) => {
     res.json({
         status: 'ok',
         bot: settings.botName,
-        version: settings.botVersion || 'V16-ULTRA',
+        version: settings.botVersion || 'V17-ULTRA',
         sessions: sess.total,
         active: sess.running,
         online: sess.online,
@@ -399,35 +335,15 @@ app.get('/health', (req, res) => {
         node: sys.node,
         platform: sys.platform,
         timestamp: Date.now(),
-        mode: INFINITE_MODE ? 'INFINITE' : 'STANDARD',
+        mode: 'PERMANENT',
         speed: PROMax_SPEED ? 'PROMAX' : 'STANDARD',
-        connection: LIFETIME_CONNECTION ? 'LIFETIME' : 'STANDARD',
+        connection: 'LIFETIME',
         logoCached: !!LOGO_BUFFER,
         aiReady: !!openai
     });
 });
 
-app.get('/api/badge', (req, res) => {
-    const sess = getSessionStats();
-    const uptimeSec = Math.floor(process.uptime());
-    res.set('Cache-Control', 'public, max-age=30');
-    res.json({
-        status: sess.running > 0 ? 'online' : 'idle',
-        schemaVersion: 1,
-        label: 'bot',
-        message: sess.running > 0 ? 'ONLINE' : 'IDLE',
-        color: sess.running > 0 ? '00ff80' : 'ffbe3c',
-        isError: false,
-        activeBots: sess.running,
-        onlineSessions: sess.online,
-        sessions: sess.total,
-        uptime: uptimeSec,
-        uptimeHuman: formatUptime(uptimeSec),
-        speed: PROMax_SPEED ? 'PROMAX' : 'STANDARD'
-    });
-});
-
-// ═══════════════ JSON FALLBACKS ═══════════════
+// ═══════════════ JSON APIS ═══════════════
 app.get('/api/json/stats', async (req, res) => {
     const sys = getSystemStats();
     const sess = getSessionStats();
@@ -438,7 +354,7 @@ app.get('/api/json/stats', async (req, res) => {
         sessions: sess,
         ping,
         bot: settings.botName,
-        version: settings.botVersion || 'V16-ULTRA',
+        version: settings.botVersion || 'V17-ULTRA',
         aiReady: !!openai,
         timestamp: new Date().toISOString()
     });
@@ -481,11 +397,9 @@ app.get('/api/json/settings', (req, res) => {
             prefixes: PREFIXES,
             infiniteMode: INFINITE_MODE,
             promaxSpeed: PROMax_SPEED,
-            lifetimeConnection: LIFETIME_CONNECTION,
-            version: settings.botVersion || 'V16-ULTRA',
-            aiReady: !!openai,
-            aiBaseUrl: process.env.AI_BASE_URL || 'openai',
-            aiModel: process.env.AI_MODEL || 'llama-3.1-8b-instant'
+            permanentConnection: PERMANENT_CONNECTION,
+            version: settings.botVersion || 'V17-ULTRA',
+            aiReady: !!openai
         }
     });
 });
@@ -529,7 +443,6 @@ function safeReadJson(file, fallback) {
             if (typeof parsed === 'object' && parsed !== null) {
                 return { ...JSON.parse(JSON.stringify(fallback)), ...parsed };
             }
-            return JSON.parse(JSON.stringify(fallback));
         }
     } catch (e) {
         console.error(`⚠️ [JSON] Corrupt: ${file} — fallback used.`);
@@ -540,14 +453,11 @@ function safeReadJson(file, fallback) {
 
 function safeWriteJson(file, data) {
     try {
-        const dir = path.dirname(file);
-        fs.ensureDirSync(dir);
+        fs.ensureDirSync(path.dirname(file));
         const tmp = file + '.tmp';
         fs.writeFileSync(tmp, JSON.stringify(data, null, 2));
         fs.renameSync(tmp, file);
-    } catch (e) {
-        console.error(`❌ [JSON] Write: ${file}: ${e.message}`);
-    }
+    } catch (e) { console.error(`❌ [JSON] Write: ${file}: ${e.message}`); }
 }
 
 let botData = safeReadJson(DATA_FILE, defaultBotData);
@@ -575,16 +485,14 @@ const userSockets = {};
 const messageLogs = {};
 
 // ═══════════════ BOLD UNICODE ═══════════════
-const toBold = (text) => {
-    const boldChars = {
-        'a':'𝗮','b':'𝗯','c':'𝗰','d':'𝗱','e':'𝗲','f':'𝗳','g':'𝗴','h':'𝗵','i':'𝗶','j':'𝗷','k':'𝗸','l':'𝗹','m':'𝗺','n':'𝗻','o':'𝗼','p':'𝗽','q':'𝗾','r':'𝗿','s':'𝘀','t':'𝘁','u':'𝘂','v':'𝘃','w':'𝘄','x':'𝘅','y':'𝘆','z':'𝘇',
-        'A':'𝗔','B':'𝗕','C':'𝗖','D':'𝗗','E':'𝗘','F':'𝗙','G':'𝗚','H':'𝗛','I':'𝗜','J':'𝗝','K':'𝗞','L':'𝗟','M':'𝗠','N':'𝗡','O':'𝗢','P':'𝗣','Q':'𝗤','R':'𝗥','S':'𝗦','T':'𝗧','U':'𝗨','V':'𝗩','W':'𝗪','X':'𝗫','Y':'𝗬','Z':'𝗭',
-        '0':'𝟬','1':'𝟭','2':'𝟮','3':'𝟯','4':'𝟰','5':'𝟱','6':'𝟲','7':'𝟳','8':'𝟴','9':'𝟵'
-    };
-    return text.split('').map(c => boldChars[c] || c).join('');
+const BOLD_MAP = {
+    'a':'𝗮','b':'𝗯','c':'𝗰','d':'𝗱','e':'𝗲','f':'𝗳','g':'𝗴','h':'𝗵','i':'𝗶','j':'𝗷','k':'𝗸','l':'𝗹','m':'𝗺','n':'𝗻','o':'𝗼','p':'𝗽','q':'𝗾','r':'𝗿','s':'𝘀','t':'𝘁','u':'𝘂','v':'𝘃','w':'𝘄','x':'𝘅','y':'𝘆','z':'𝘇',
+    'A':'𝗔','B':'𝗕','C':'𝗖','D':'𝗗','E':'𝗘','F':'𝗙','G':'𝗚','H':'𝗛','I':'𝗜','J':'𝗝','K':'𝗞','L':'𝗟','M':'𝗠','N':'𝗡','O':'𝗢','P':'𝗣','Q':'𝗤','R':'𝗥','S':'𝗦','T':'𝗧','U':'𝗨','V':'𝗩','W':'𝗪','X':'𝗫','Y':'𝗬','Z':'𝗭',
+    '0':'𝟬','1':'𝟭','2':'𝟮','3':'𝟯','4':'𝟰','5':'𝟱','6':'𝟲','7':'𝟳','8':'𝟴','9':'𝟵'
 };
+const toBold = (text) => text.split('').map(c => BOLD_MAP[c] || c).join('');
 
-// ═══════════════ CYBERPUNK BANNER ═══════════════
+// ═══════════════ BANNER ═══════════════
 function buildCyberpunkBannerSync(session, botName) {
     const pingMs = cachedPing;
     const sys = getSystemStats();
@@ -597,19 +505,19 @@ function buildCyberpunkBannerSync(session, botName) {
     return (
 `⛧━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━⛧
     ░▒▓█  ${toBold('BL@CKN1TE-NXS')}  █▓▒░
-    ░▒▓█  ${toBold('V16 • CYBERPUNK • INFINITE')}  █▓▒░
+    ░▒▓█  ${toBold('V17 • PERMANENT • INSTANT')}  █▓▒░
 ⛧━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━⛧
 
 ⚡️🔥⚡️   ${toBold('SYSTEM ONLINE')}   ⚡️🔥⚡️
 
 ╔═══════════════════════════════════════╗
-║  📡 ${toBold('LIVE CONSOLE SNAPSHOT')}
+║  📡 ${toBold('PERMANENT CONNECTION ACTIVE')}
 ╚═══════════════════════════════════════╝
 
 ╰┈➤ 🛰️ ${toBold('LINK')}      : ✅ ${toBold('ESTABLISHED')}
 ╰┈➤ 🤖 ${toBold('BOT')}       : ${botName}
 ╰┈➤ 🧬 ${toBold('SESSION')}   : ${session.userId.slice(0, 18)}
-╰┈➤ ⚙️ ${toBold('MODE')}      : ♾️ ${toBold('INFINITE')}
+╰┈➤ ⚙️ ${toBold('MODE')}      : ♾️ ${toBold('PERMANENT')}
 ╰┈➤ ${session.isRunning ? '🟢' : '🔴'} ${toBold('STATE')}     : ${botState}
 ╰┈➤ 🔗 ${toBold('LINK')}      : ${linkState}
 ╰┈➤ 📶 ${toBold('PING')}      : ${pingStr}
@@ -624,9 +532,9 @@ function buildCyberpunkBannerSync(session, botName) {
 ╚═══════════════════════════════════════╝
 
 ╰┈➤ 🎯 ${toBold("YOU'RE NOW LINKED TO")}
-╰┈➤ ➜ ${toBold('BL@CKN1TE-NXS')} · ${toBold('V16 ULTRA')}
+╰┈➤ ➜ ${toBold('BL@CKN1TE-NXS')} · ${toBold('V17 ULTRA')}
 ╰┈➤ ➜ ${toBold('SECURED & ENCRYPTED')}
-╰┈➤ ➜ ${toBold('LIFETIME CONNECTION')}
+╰┈➤ ➜ ${toBold('LIFETIME PERMANENT')}
 
 ┏━〔 ${toBold('🌐 SESSION POOL')} 〕━━━━━━━━━
 ┃  🟢 ${toBold('RUNNING')}  : ${sess.running}
@@ -652,19 +560,20 @@ function buildCyberpunkBannerSync(session, botName) {
     );
 }
 
-// ═══════════════ CYBERPUNK MENU ═══════════════
+// ═══════════════ ADVANCED MENU ═══════════════
 function buildBeautifulMenuSync(session, botData, customName) {
     const p = PREFIXES[0] || '.';
     const modeIcon = session.isPublic ? '🌐' : '🔒';
     const modeText = session.isPublic ? 'PUBLIC' : 'PRIVATE';
     const ownerName = settings.ownerName || 'BL@CKN1TE';
-    const version = settings.botVersion || 'V16-ULTRA';
+    const version = settings.botVersion || 'V17-ULTRA';
     const now = new Date();
     const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
     const dateStr = now.toLocaleDateString('en-GB');
     const sysStats = getSystemStats();
     const pingStr = cachedPing > 0 ? `${cachedPing} ms` : '--';
     const statusStr = session.isRunning ? '🟢 ONLINE' : '🔴 OFFLINE';
+    const sessStats = getSessionStats();
 
     const userCore = [`${p}read`, `${p}ghost`, `${p}autoreacts`, `${p}ai`, `${p}vv`, `${p}dp`, `${p}ping`, `${p}owner`, `${p}translate`, `${p}online`];
     const mediaVault = [`${p}song`, `${p}video`, `${p}tiktok`, `${p}insta`, `${p}facebook`, `${p}gdrive`, `${p}mf`, `${p}apk`];
@@ -680,7 +589,7 @@ function buildBeautifulMenuSync(session, botData, customName) {
 
     const header = `⛧━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━⛧
     ░▒▓█  ${toBold('BL@CKN1TE-NXS')}  █▓▒░
-    ░▒▓█  ${toBold('V16 • CYBERPUNK CORE • ULTRA')}  █▓▒░
+    ░▒▓█  ${toBold('V17 • CYBERPUNK • PERMANENT')}  █▓▒░
 ⛧━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━⛧
 
 ⚡️🔥  ${statusStr}  🔥⚡️`;
@@ -696,6 +605,7 @@ function buildBeautifulMenuSync(session, botData, customName) {
 ╰┈➤ ${modeIcon} ${toBold('MODE')}     : ${modeText}
 ╰┈➤ 📶 ${toBold('PING')}     : ${pingStr}
 ╰┈➤ 📊 ${toBold('COMMANDS')} : ${totalCmds}+ loaded
+╰┈➤ ♾️ ${toBold('CONNECT')}  : PERMANENT
 ╰┈➤ 🔣 ${toBold('PREFIXES')} : ${PREFIXES.join('  ')}
 ⛧━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━⛧`;
 
@@ -741,7 +651,8 @@ ${ownerZone.map(c => `┃  ▸ ${toBold(c)}`).join('\n')}
 ║  ──────────────────────────────────
 ║  ⚡ ${toBold('Powered by BL@CKN1TE')}
 ║  🎩 ${toBold('The Incisive Tri-Hat Hacker')}
-║  ♾️ ${toBold('INFINITE')} • ${toBold('24/7/365')} • ${toBold('PROMAX')}
+║  ♾️ ${toBold('PERMANENT')} • ${toBold('24/7/365')} • ${toBold('PROMAX')}
+║  📊 ${toBold('SESSIONS')}: ${sessStats.online} online · ${sessStats.running} running
 ⛧━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━⛧
 
   ░▒▓█ ${toBold('END OF TRANSMISSION')} █▓▒░
@@ -764,6 +675,19 @@ class BotSession {
         this.isPaused = false;
         this.aiEnabled = false;
         this.isPairing = false;
+        this.everConnected = false;
+        this.disconnectedSince = null;
+        this._lastStatusSignature = null;
+        this._linkedLoggedOnce = false;
+        this._pausedNoticeShown = false;
+        this.processedMessages = new Set();
+        this.botJidCache = null;
+        this.lastConnectMessageTime = null;
+        this.keepAliveInterval = null;
+        this.heartbeatInterval = null;
+        this.activeInterval = null;
+        this.watchdogInterval = null;
+        this.isInitializing = false;
 
         const persisted = sessionStates[userId];
         if (persisted && typeof persisted.isRunning === 'boolean') this.isRunning = persisted.isRunning;
@@ -774,48 +698,27 @@ class BotSession {
         this.autoReact = botData.statusSettings?.[userId]?.autoReact || false;
         this.isPublic = botData.statusSettings?.[userId]?.isPublic || false;
         this.authPath = path.join(AUTH_DIR, userId);
-        this.processedMessages = new Set();
-        this.activeInterval = null;
-        this.keepAliveInterval = null;
-        this.watchdogInterval = null;
-        this.heartbeatInterval = null;
-        this.isInitializing = false;
-        this.lastConnectMessageTime = null;
-        this.reconnectAttempts = 0;
-        this.silentMode = SILENT_RECONNECT;
-        this.lastReconnectLog = 0;
-        this.everConnected = false;
-        this.botJidCache = null;
-        this._lastStatusSignature = null;
-        this._linkedLoggedOnce = false;
-        this._reconnectTimer = null;
-        this.disconnectedSince = null;
     }
 
     persistState() {
-        sessionStates[this.userId] = {
-            isRunning: this.isRunning,
-            updatedAt: Date.now()
-        };
+        sessionStates[this.userId] = { isRunning: this.isRunning, updatedAt: Date.now() };
         saveSessionStates();
     }
 
     sendLog(message, type = 'info') {
-        if (this.everConnected) {
-            const noise = /reconnect|closed|retry|attempt|link dropped|restart required|connection lost|init hiccup/i;
-            if (noise.test(message)) {
-                const now = Date.now();
-                const disconnectedFor = this.disconnectedSince ? (now - this.disconnectedSince) : 0;
-                if (disconnectedFor < RECONNECT_SILENCE_WINDOW_MS) return;
-                if (now - this.lastReconnectLog < 5 * 60 * 1000) return;
-                this.lastReconnectLog = now;
-            }
-        }
         const logEntry = { timestamp: new Date().toLocaleTimeString(), message, type, user: this.userId };
         const socketId = userSockets[this.userId];
         if (socketId) io.to(socketId).emit('console', logEntry);
         io.emit('console', logEntry);
         console.log(`[${this.userId}] ${message}`);
+    }
+
+    sendTypingSignal() {
+        // Emit to dashboard
+        const socketId = userSockets[this.userId];
+        if (socketId) io.to(socketId).emit('bot-typing', { user: this.userId });
+        // Send composing presence to WhatsApp
+        try { this.sock?.sendPresenceUpdate('composing'); } catch (e) {}
     }
 
     sendConnectionStatus(force = false) {
@@ -824,11 +727,7 @@ class BotSession {
         this._lastStatusSignature = signature;
 
         const socketId = userSockets[this.userId];
-        const payload = {
-            connected: this.isConnected,
-            running: this.isRunning,
-            user: this.userId
-        };
+        const payload = { connected: this.isConnected, running: this.isRunning, user: this.userId };
         if (socketId) io.to(socketId).emit('connection-status', payload);
         io.emit('session-status', payload);
 
@@ -849,21 +748,14 @@ class BotSession {
             const completion = await openai.chat.completions.create({
                 model: process.env.AI_MODEL || "llama-3.1-8b-instant",
                 messages: [
-                    {
-                        role: "system",
-                        content: "You are BL@CKN1TE-NXS-ULTRA, a helpful WhatsApp assistant created by BL@CKN1TE (The Incisive Tri-Hat Hacker). Reply in the same language the user writes in. Keep responses helpful, concise, and friendly."
-                    },
+                    { role: "system", content: "You are BL@CKN1TE-NXS-ULTRA. Reply in the user's language, helpful and concise." },
                     { role: "user", content: userMessage }
                 ],
-                max_tokens: 1024,  // Increased memory
-                temperature: 0.75,
-                top_p: 0.95
+                max_tokens: 1024,
+                temperature: 0.7
             });
             return completion.choices[0].message.content.trim();
-        } catch (error) {
-            console.error(`[AI] Error: ${error.message}`);
-            return null;
-        }
+        } catch (error) { console.error(`[AI] ${error.message}`); return null; }
     }
 
     startKeepAlive() {
@@ -878,10 +770,12 @@ class BotSession {
     startWatchdog() {
         if (this.watchdogInterval) clearInterval(this.watchdogInterval);
         this.watchdogInterval = setInterval(async () => {
-            if (this.isInitializing) return;
-            if (this.isPairing) return;
+            if (this.isInitializing || this.isPairing) return;
+            // PERMANENT CONNECTION: only reinitialize if truly not connected
             if (!this.sock || !this.sock.user || !this.isConnected) {
-                try { await this.initialize(); } catch (e) {}
+                if (!PERMANENT_CONNECTION || this.disconnectedSince) {
+                    try { await this.initialize(); } catch (e) {}
+                }
             }
         }, SESSION_WATCHDOG_MS);
     }
@@ -891,7 +785,9 @@ class BotSession {
         this.heartbeatInterval = setInterval(async () => {
             if (!this.sock || !this.sock.user) return;
             try { await this.sock.sendPresenceUpdate(this.isRunning ? 'available' : 'unavailable'); }
-            catch (e) { if (!this.isInitializing) { try { await this.initialize(); } catch (err) {} } }
+            catch (e) {
+                if (!this.isInitializing && !PERMANENT_CONNECTION) { try { await this.initialize(); } catch (err) {} }
+            }
         }, HEARTBEAT_INTERVAL_MS);
     }
 
@@ -901,32 +797,15 @@ class BotSession {
             if (this.isConnected && this.isRunning && this.sock?.user) {
                 try {
                     const botNumber = jidNormalizedUser(this.sock.user.id);
-                    await this.sock.sendMessage(botNumber, {
-                        text: "♾️ 𝗕𝗟@𝗖𝗞𝗡𝟭𝗧𝗘-𝗡𝗫𝗦 𝗜𝗦 𝗢𝗡𝗟𝗜𝗡𝗘 🚀\n\n_Lifetime Connection Active_"
-                    });
+                    await this.sock.sendMessage(botNumber, { text: "♾️ 𝗕𝗟@𝗖𝗞𝗡𝟭𝗧𝗘-𝗡𝗫𝗦 𝗜𝗦 𝗢𝗡𝗟𝗜𝗡𝗘 🚀\n\n_Permanent Connection Active_" });
                 } catch (e) {}
             }
-        }, ACTIVE_CHECK_INTERVAL_MS);
-    }
-
-    async forceReconnect(delayMs = 3000) {
-        if (this.isInitializing) return;
-        if (this.isPairing) return;
-        this.reconnectAttempts++;
-        this.sendLog(`🔄 Reconnect #${this.reconnectAttempts} in ${delayMs/1000}s`, "warning");
-        setTimeout(async () => {
-            try { await this.initialize(); }
-            catch (e) {
-                const next = Math.min(delayMs * 2, 30000);
-                setTimeout(() => this.forceReconnect(next), next);
-            }
-        }, delayMs);
+        }, 60 * 60 * 1000);
     }
 
     async initialize(pairingNumber = null) {
         if (this.isInitializing) return;
         this.isInitializing = true;
-
         if (pairingNumber) this.isPairing = true;
 
         try {
@@ -951,7 +830,6 @@ class BotSession {
                 emitOwnEvents: true,
                 retryRequestDelayMs: RETRY_REQUEST_DELAY_MS,
                 maxMsgRetryCount: MAX_MSG_RETRY_COUNT,
-                linkPreviewImageThumbnailWidth: 192,
                 generateHighQualityLinkPreview: false,
                 getMessage: async (key) => {
                     if (messageLogs[key.id]) return { conversation: messageLogs[key.id].text };
@@ -972,7 +850,7 @@ class BotSession {
                         this.sendLog(`❌ Pairing error: ${err.message}`, 'error');
                         this.isPairing = false;
                     }
-                }, 1500);
+                }, 1200);
             }
 
             this.sock.ev.on('creds.update', saveCreds);
@@ -996,7 +874,7 @@ class BotSession {
                 if (!this.isRunning) {
                     if (!this._pausedNoticeShown) {
                         this._pausedNoticeShown = true;
-                        this.sendLog('⏸️ Bot paused — messages ignored until START is pressed.', 'warning');
+                        this.sendLog('⏸️ Paused — messages ignored until START.', 'warning');
                     }
                     return;
                 }
@@ -1010,6 +888,7 @@ class BotSession {
                     }
                 } catch (e) {}
 
+                // Process in parallel for speed
                 await Promise.all(m.messages.map(async (msg) => {
                     try {
                         const from = msg.key.remoteJid;
@@ -1025,7 +904,6 @@ class BotSession {
 
                         if (!isMe && !isStatus) {
                             if (this.readReceipts !== false) handleAutoread(this.sock, msg, this).catch(() => {});
-                            else { try { this.sock.sendPresenceUpdate('available'); } catch (e) {} }
                             storeMessage(msg).catch(() => {});
                         }
 
@@ -1037,33 +915,22 @@ class BotSession {
                         if (this.processedMessages.size > 800) this.processedMessages.delete(this.processedMessages.values().next().value);
 
                         if (!isStatus) {
-                            let logEntry = { text, type };
-                            if (['imageMessage','videoMessage','audioMessage'].includes(type)) {
-                                try {
-                                    const mContent = messageContent[type];
-                                    if (mContent && (mContent.directPath || mContent.url)) {
-                                        const stream = await downloadContentFromMessage(mContent, type.replace('Message',''));
-                                        let buffer = Buffer.from([]);
-                                        for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
-                                        logEntry.buffer = buffer;
-                                    }
-                                } catch (e) {}
-                            }
-                            logEntry.pushName = msg.pushName || 'User';
-                            messageLogs[msgId] = logEntry;
+                            messageLogs[msgId] = { text, type, pushName: msg.pushName || 'User' };
                             if (Object.keys(messageLogs).length > 1500) delete messageLogs[Object.keys(messageLogs)[0]];
                         }
 
                         if (this.autoReact && !isMe && !isStatus) {
-                            const emojis = ['❤️','👍','🔥','👏','😮','😂','🙌','✨','⭐','✅','🤖','⚡','🌟','💯','🌈','💎','👑','🎉','🧿','🍀'];
-                            try { this.sock.sendMessage(from, { react: { text: emojis[Math.floor(Math.random()*emojis.length)], key: msg.key } }); } catch (e) {}
+                            try { this.sock.sendMessage(from, { react: { text: getRandomReaction(), key: msg.key } }); } catch (e) {}
                         }
 
+                        // Instant AI response for DMs (non-command)
                         if (this.aiEnabled && !isMe && !isStatus && !isGroup && text && !PREFIXES.some(p => text.startsWith(p))) {
+                            this.sendTypingSignal();
                             try {
                                 const aiResponse = await this.getAIResponse(from, text);
                                 if (aiResponse) await this.sock.sendMessage(from, { text: aiResponse }, { quoted: msg });
                             } catch (e) {}
+                            return;
                         }
 
                         if (isStatus && !isMe) { handleStatusUpdate(this.sock, m, botData, this.userId).catch(() => {}); return; }
@@ -1086,9 +953,7 @@ class BotSession {
                         const q = args.join(' ');
 
                         if (isGroup && botData.antiStatusGroups?.[from] && !isAdmin) {
-                            if (msg.message?.forwardingScore > 0) {
-                                try { this.sock.sendMessage(from, { delete: msg.key }); return; } catch (e) {}
-                            }
+                            if (msg.message?.forwardingScore > 0) { try { this.sock.sendMessage(from, { delete: msg.key }); return; } catch (e) {} }
                         }
 
                         if (isGroup && botData.antilinkGroups?.[from] && !isAdmin) {
@@ -1108,6 +973,9 @@ class BotSession {
                         const matchedPrefix = PREFIXES.find(p => cmd.startsWith(p));
                         if (matchedPrefix) {
                             const commandName = cmd.slice(matchedPrefix.length).split(' ')[0];
+
+                            // INSTANT: Send typing presence + dashboard typing indicator
+                            this.sendTypingSignal();
                             this.reactRandom(msg).catch(() => {});
 
                             (async () => {
@@ -1120,23 +988,19 @@ class BotSession {
                                                 this.sock.sendMessage(from, { react: { text: lightning, key: msg.key } }).catch(() => {});
 
                                                 const customName = (botData.userNames && botData.userNames[this.userId]) || msg.pushName || 'User';
-                                                let menuText;
-                                                try { menuText = buildBeautifulMenuSync(this, botData || {}, customName); }
-                                                catch (buildErr) {
-                                                    menuText = `⚠️ Menu build failed.\n\n${buildErr.message}`;
-                                                }
+                                                const menuText = buildBeautifulMenuSync(this, botData || {}, customName);
 
-                                                // ═══ SEND MENU WITH LOGO — one message, no waiting ═══
-                                                const logoBuffer = await ensureLogo(5);
+                                                // INSTANT LOGO SEND — buffer is preloaded, no waiting
+                                                const logoBuffer = getLogoBuffer();
 
-                                                if (logoBuffer && logoBuffer.length > 0) {
+                                                if (logoBuffer) {
                                                     try {
                                                         await this.sock.sendMessage(from, {
                                                             image: logoBuffer,
                                                             caption: menuText,
                                                             mimetype: 'image/png'
                                                         }, { quoted: msg });
-                                                        this.sendLog('📋 Menu sent (logo + text) ✅', 'success');
+                                                        this.sendLog('📋 Menu sent (logo + text) ⚡ INSTANT', 'success');
                                                     } catch (imgErr) {
                                                         try {
                                                             await this.sock.sendMessage(from, {
@@ -1149,6 +1013,8 @@ class BotSession {
                                                         }
                                                     }
                                                 } else {
+                                                    // Try preloading in background
+                                                    preloadLogo().catch(() => {});
                                                     try {
                                                         await this.sock.sendMessage(from, {
                                                             image: { url: LOGO_URL },
@@ -1159,9 +1025,7 @@ class BotSession {
                                                         await this.sock.sendMessage(from, { text: menuText }, { quoted: msg });
                                                     }
                                                 }
-                                            } catch (e) {
-                                                this.sendLog('Menu error: ' + e.message, 'error');
-                                            }
+                                            } catch (e) { this.sendLog('Menu error: ' + e.message, 'error'); }
                                             break;
                                         }
                                         case 'read': await commands.read(this.sock, from, msg, isAdmin, this, args); break;
@@ -1250,33 +1114,40 @@ class BotSession {
                     const statusCode = lastDisconnect?.error?.output?.statusCode;
                     this.isConnected = false;
                     this.isInitializing = false;
-                    if (!this.disconnectedSince) this.disconnectedSince = Date.now();
-                    if (!this.isPairing) this.sendLog(`⚠️ Link dropped (code ${statusCode}). Auto-restoring...`, 'warning');
-                    this.sendConnectionStatus(true);
 
-                    const reconnectDelay =
-                        statusCode === DisconnectReason.loggedOut ? 4000 :
-                        statusCode === DisconnectReason.restartRequired ? 300 :
-                        statusCode === DisconnectReason.connectionLost ? 800 : 1500;
+                    // PERMANENT CONNECTION: Only reconnect if logged out (session actually dead)
+                    // Otherwise: stay silent, keep trying to reconnect in background
+                    if (statusCode === DisconnectReason.loggedOut) {
+                        this.sendLog(`⚠️ Session logged out. Re-link required.`, 'error');
+                        this.sendConnectionStatus(true);
+                        return;
+                    }
 
-                    if (this._reconnectTimer) clearTimeout(this._reconnectTimer);
-                    this._reconnectTimer = setTimeout(() => {
-                        this._reconnectTimer = null;
-                        this.forceReconnect(reconnectDelay);
-                    }, 300);
+                    if (PERMANENT_CONNECTION) {
+                        // Silent reconnection — no noise, no user notification
+                        if (!this.disconnectedSince) this.disconnectedSince = Date.now();
+                        this.sendConnectionStatus(true);
+
+                        // Reconnect silently after short delay
+                        setTimeout(() => {
+                            this.isInitializing = false;
+                            this.initialize().catch(() => {
+                                // If fails, retry silently
+                                setTimeout(() => this.initialize().catch(() => {}), 3000);
+                            });
+                        }, statusCode === DisconnectReason.restartRequired ? 300 : 1000);
+                    } else {
+                        this.sendLog(`⚠️ Link dropped (${statusCode}). Restoring...`, 'warning');
+                        this.sendConnectionStatus(true);
+                        setTimeout(() => { this.forceReconnect(1500); }, 300);
+                    }
 
                 } else if (connection === 'open') {
                     this.isConnected = true;
                     this.everConnected = true;
                     this.isInitializing = false;
                     this.isPairing = false;
-                    this.reconnectAttempts = 0;
                     this.disconnectedSince = null;
-
-                    if (this._reconnectTimer) {
-                        clearTimeout(this._reconnectTimer);
-                        this._reconnectTimer = null;
-                    }
 
                     const botNumber = jidNormalizedUser(this.sock.user.id);
                     const botNumClean = botNumber.split('@')[0].split(':')[0];
@@ -1291,16 +1162,16 @@ class BotSession {
                     if (!this._linkedLoggedOnce) {
                         this._linkedLoggedOnce = true;
                         this.sendLog('━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
-                        this.sendLog('🎉 SESSION LINKED — LIFETIME CONNECTION ACTIVE', 'success');
+                        this.sendLog('🎉 SESSION LINKED — PERMANENT CONNECTION', 'success');
                         this.sendLog(`👤 Bot: ${this.userId}`, 'success');
                         this.sendLog(`📱 Number: +${botNumClean}`, 'success');
                         this.sendLog(`♾️ Lifetime Mode: ENABLED`, 'success');
-                        this.sendLog(`🚀 Speed: PROMAX UNLIMITED`, 'success');
+                        this.sendLog(`🚀 Speed: PROMAX INSTANT`, 'success');
                         this.sendLog(`🎯 Session state: ${this.isRunning ? 'ONLINE' : 'PAUSED'}`, 'info');
                         this.sendLog(`🖼️ Logo cached: ${LOGO_BUFFER ? 'YES' : 'NO'}`, 'info');
                         this.sendLog('━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
                     } else {
-                        this.sendLog('♾️ Connection restored (silent)', 'info');
+                        this.sendLog('♾️ Connection restored silently', 'info');
                     }
 
                     this.sendConnectionStatus(true);
@@ -1314,14 +1185,14 @@ class BotSession {
                             await this.sock.query({
                                 tag: 'iq',
                                 attrs: { to: '@s.whatsapp.net', type: 'set', xmlns: 'status' },
-                                content: [{ tag: 'status', attrs: {}, content: Buffer.from("I'M USING BEST BOT BL@CKN1TE-NXS V16 ULTRA", 'utf-8') }]
+                                content: [{ tag: 'status', attrs: {}, content: Buffer.from("I'M USING BEST BOT BL@CKN1TE-NXS V17 ULTRA", 'utf-8') }]
                             });
                         } catch (e) {}
-                    }, 2000);
+                    }, 1500);
 
                     if (this.isRunning && (!this.lastConnectMessageTime || (Date.now() - this.lastConnectMessageTime > 60 * 60 * 1000))) {
                         this.sock.sendMessage(botNumber, {
-                            text: "♾️ 𝗕𝗟@𝗖𝗞𝗡𝟭𝗧𝗘-𝗡𝗫𝗦 𝗩𝟭𝟲 𝗨𝗟𝗧𝗥𝗔 𝗖𝗢𝗡𝗡𝗘𝗖𝗧𝗘𝗗 ✅\n\nPrefixes: .  /  >\n\nType .menu to unleash commands."
+                            text: "♾️ 𝗕𝗟@𝗖𝗞𝗡𝟭𝗧𝗘-𝗡𝗫𝗦 𝗩𝟭𝟳 𝗨𝗟𝗧𝗥𝗔 𝗖𝗢𝗡𝗡𝗘𝗖𝗧𝗘𝗗 ✅\n\nPrefixes: .  /  >\n\nType .menu to unleash commands."
                         }).catch(() => {});
                         this.lastConnectMessageTime = Date.now();
                     }
@@ -1332,8 +1203,19 @@ class BotSession {
             this.isInitializing = false;
             this.isPairing = false;
             this.sendLog(`Init hiccup: ${err.message}. Auto-retrying...`, 'error');
-            setTimeout(() => this.forceReconnect(4000), 4000);
+            setTimeout(() => {
+                this.isInitializing = false;
+                this.initialize().catch(() => {});
+            }, 3000);
         }
+    }
+
+    async forceReconnect(delayMs = 2000) {
+        if (this.isInitializing || this.isPairing) return;
+        setTimeout(async () => {
+            try { await this.initialize(); }
+            catch (e) { setTimeout(() => this.forceReconnect(Math.min(delayMs * 2, 30000)), delayMs); }
+        }, delayMs);
     }
 }
 
@@ -1404,11 +1286,11 @@ io.on('connection', (socket) => {
             if (!sessions[userId]) sessions[userId] = new BotSession(userId);
             const s = sessions[userId];
 
+            // INSTANT: Wait max 8s for socket, but 99% of the time it's already ready
             if (!s.sock || !s.sock.user) {
-                s.sendLog('⏳ Waiting for socket to be ready...', 'info');
                 const startWait = Date.now();
-                while ((!s.sock || !s.sock.user) && (Date.now() - startWait < 20000)) {
-                    await delay(250);
+                while ((!s.sock || !s.sock.user) && (Date.now() - startWait < 8000)) {
+                    await delay(150);
                     if (!s.isInitializing && (!s.sock || !s.sock.user)) {
                         try { await s.initialize(); } catch (e) {}
                     }
@@ -1429,38 +1311,33 @@ io.on('connection', (socket) => {
             if (!s.botJidCache) s.botJidCache = jidNormalizedUser(s.sock.user.id);
             s.sock.sendPresenceUpdate('available').catch(() => {});
 
-            // ═══ SEND BANNER WITH LOGO — one message ═══
+            // INSTANT BANNER with logo
             const banner = buildCyberpunkBannerSync(s, botName);
-            const logoBuffer = await ensureLogo(5);
+            const logoBuffer = getLogoBuffer();
 
-            if (logoBuffer && logoBuffer.length > 0) {
+            if (logoBuffer) {
                 s.sock.sendMessage(s.botJidCache, {
                     image: logoBuffer,
                     caption: banner,
                     mimetype: 'image/png'
-                })
-                    .then(() => s.sendLog('🎩🔥⚡️ CYBERPUNK BANNER DELIVERED ✅', 'success'))
-                    .catch(async () => {
-                        try {
-                            await s.sock.sendMessage(s.botJidCache, { image: { url: LOGO_URL }, caption: banner, mimetype: 'image/png' });
-                        } catch (e2) {
-                            await s.sock.sendMessage(s.botJidCache, { text: banner });
-                        }
-                    });
+                }).then(() => s.sendLog('🎩🔥⚡️ BANNER DELIVERED INSTANT ✅', 'success'))
+                  .catch(async () => {
+                      try { await s.sock.sendMessage(s.botJidCache, { image: { url: LOGO_URL }, caption: banner, mimetype: 'image/png' }); }
+                      catch (e2) { await s.sock.sendMessage(s.botJidCache, { text: banner }); }
+                  });
             } else {
-                try {
-                    await s.sock.sendMessage(s.botJidCache, { image: { url: LOGO_URL }, caption: banner, mimetype: 'image/png' });
-                } catch (e2) {
-                    await s.sock.sendMessage(s.botJidCache, { text: banner });
-                }
+                preloadLogo().catch(() => {});
+                try { await s.sock.sendMessage(s.botJidCache, { image: { url: LOGO_URL }, caption: banner, mimetype: 'image/png' }); }
+                catch (e2) { await s.sock.sendMessage(s.botJidCache, { text: banner }); }
             }
 
+            // INSTANT connection status update — under 1 second
             s.sendConnectionStatus(true);
             socket.emit('session-status', { user: userId, running: true, connected: true });
 
             io.emit('console', {
                 timestamp: new Date().toLocaleTimeString(),
-                message: `🟢 START — ${userId} ONLINE · PROMAX SPEED`,
+                message: `🟢 START — ${userId} ONLINE · PERMANENT CONNECTION`,
                 type: 'success',
                 user: userId
             });
@@ -1473,15 +1350,14 @@ io.on('connection', (socket) => {
 
         } catch (e) {
             console.error('[START-SESSION]', e);
-            socket.emit('console', { timestamp: new Date().toLocaleTimeString(), message: `❌ start-session error: ${e.message}`, type: 'error', user: 'system' });
+            socket.emit('console', { timestamp: new Date().toLocaleTimeString(), message: `❌ start error: ${e.message}`, type: 'error', user: 'system' });
         }
     });
 
     socket.on('stop-session', async (payload) => {
         try {
             const userId = (typeof payload === 'string') ? payload : (payload && payload.userId);
-            if (!userId) return;
-            if (!sessions[userId]) return;
+            if (!userId || !sessions[userId]) return;
             const s = sessions[userId];
 
             s.isRunning = false;
@@ -1496,7 +1372,7 @@ io.on('connection', (socket) => {
 
             io.emit('console', {
                 timestamp: new Date().toLocaleTimeString(),
-                message: `🔴 STOP — ${userId} paused (device still linked)`,
+                message: `🔴 STOP — ${userId} paused (link still active)`,
                 type: 'warning',
                 user: userId
             });
@@ -1525,7 +1401,6 @@ io.on('connection', (socket) => {
                 sessions[userId].isPublic = !!newSettings.publicMode;
             }
             saveBotData();
-            console.log(`[${userId}] Settings updated:`, newSettings);
         } catch (e) { console.error('[BOT-SETTINGS]', e); }
     });
 
@@ -1543,7 +1418,6 @@ io.on('connection', (socket) => {
                 if (fs.existsSync(authPath)) fs.removeSync(authPath);
                 delete sessions[userId];
                 if (sessionStates[userId]) { delete sessionStates[userId]; saveSessionStates(); }
-                io.emit('total-active', { count: 0, online: 0, sessions: Object.keys(sessions).length });
                 const socketId = userSockets[userId];
                 if (socketId) io.to(socketId).emit('connection-status', { connected: false, running: false, user: userId });
                 delete userSockets[userId];
@@ -1564,16 +1438,13 @@ io.on('connection', (socket) => {
                 delete sessions[userId];
                 if (sessionStates[userId]) { delete sessionStates[userId]; saveSessionStates(); }
                 const socketId = userSockets[userId];
-                if (socketId) {
-                    io.to(socketId).emit('connection-status', { connected: false, running: false, user: userId });
-                    delete userSockets[userId];
-                }
+                if (socketId) { io.to(socketId).emit('connection-status', { connected: false, running: false, user: userId }); delete userSockets[userId]; }
                 io.emit('total-active', {
                     count: Object.values(sessions).filter(s => s.isRunning).length,
                     online: Object.values(sessions).filter(s => s.isConnected).length,
                     sessions: Object.keys(sessions).length
                 });
-                io.emit('console', { timestamp: new Date().toLocaleTimeString(), message: `🚨 Session terminated: ${userId}`, type: 'warning', user: userId });
+                io.emit('console', { timestamp: new Date().toLocaleTimeString(), message: `🚨 Terminated: ${userId}`, type: 'warning', user: userId });
             }
         } catch (e) {}
     });
@@ -1624,11 +1495,6 @@ app.post('/api/terminate', async (req, res) => {
             if (sessionStates[userId]) { delete sessionStates[userId]; saveSessionStates(); }
             const socketId = userSockets[userId];
             if (socketId) { io.to(socketId).emit('connection-status', { connected: false, running: false, user: userId }); delete userSockets[userId]; }
-            io.emit('total-active', {
-                count: Object.values(sessions).filter(s => s.isRunning).length,
-                online: Object.values(sessions).filter(s => s.isConnected).length,
-                sessions: Object.keys(sessions).length
-            });
             return res.json({ success: true, userId });
         }
         const authPath = path.join(AUTH_DIR, userId);
@@ -1683,14 +1549,11 @@ async function loadExistingSessions() {
             if (stats.isDirectory()) {
                 const credsFile = path.join(authPath, 'creds.json');
                 if (fs.existsSync(credsFile)) {
-                    if (isBotNameBlacklisted(userId)) { console.log(`🚫 [BLACKLIST] Skipping ${userId}`); continue; }
+                    if (isBotNameBlacklisted(userId)) continue;
                     console.log(`[System] Auto-loading: ${userId}`);
                     if (!sessions[userId]) {
                         sessions[userId] = new BotSession(userId);
-                        sessions[userId].initialize().catch(err => {
-                            console.error(`Failed ${userId}:`, err.message);
-                            setTimeout(() => sessions[userId]?.forceReconnect(4000), 4000);
-                        });
+                        sessions[userId].initialize().catch(() => {});
                     }
                 }
             }
@@ -1698,8 +1561,9 @@ async function loadExistingSessions() {
     } catch (err) { console.error('[System] Load error:', err.message); }
 }
 
-// ═══════════════ SUPERVISOR ═══════════════
-function startInfiniteSupervisor() {
+// ═══════════════ SUPERVISOR (MINIMAL — PERMANENT CONNECTION) ═══════════════
+function startSupervisor() {
+    // Only revive truly missing sessions, don't interrupt connected ones
     setInterval(async () => {
         try {
             const authDirs = await fs.readdir(AUTH_DIR);
@@ -1712,19 +1576,17 @@ function startInfiniteSupervisor() {
                         console.log(`♾️ [Supervisor] Reviving: ${userId}`);
                         sessions[userId] = new BotSession(userId);
                         sessions[userId].initialize().catch(() => {});
-                    } else if (!sessions[userId].isConnected && !sessions[userId].isInitializing && !sessions[userId]._reconnectTimer && !sessions[userId].isPairing) {
-                        console.log(`♾️ [Supervisor] Re-linking: ${userId}`);
-                        sessions[userId].forceReconnect(1200).catch(() => {});
                     }
+                    // PERMANENT CONNECTION: don't touch connected sessions
                 }
             }
         } catch (e) {}
-    }, AUTO_RELOAD_INTERVAL_MS);
+    }, 5 * 60 * 1000);
 
     setInterval(() => {
         const activeCount = Object.values(sessions).filter(s => s.isRunning).length;
         const onlineCount = Object.values(sessions).filter(s => s.isConnected).length;
-        console.log(`🚀 [PROMAX] Sessions: ${Object.keys(sessions).length} | Running: ${activeCount} | Online: ${onlineCount} | Uptime: ${formatUptime(Math.floor(process.uptime()))}`);
+        console.log(`🚀 [PERMANENT] Sessions: ${Object.keys(sessions).length} | Running: ${activeCount} | Online: ${onlineCount} | Uptime: ${formatUptime(Math.floor(process.uptime()))}`);
     }, 30 * 60 * 1000);
 }
 
@@ -1732,30 +1594,33 @@ function startInfiniteSupervisor() {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, async () => {
     console.log(`\n╔═══════════════════════════════════════════════╗`);
-    console.log(`║  BL@CKN1TE-NXS-ULTRA · SERVER V16              ║`);
-    console.log(`║  The Incisive Tri-Hat Hacker                   ║`);
+    console.log(`║  BL@CKN1TE-NXS-ULTRA · SERVER V17             ║`);
+    console.log(`║  PERMANENT CONNECTION · INSTANT RESPONSE       ║`);
     console.log(`╚═══════════════════════════════════════════════╝`);
     console.log(`🚀 Port: ${PORT}`);
     console.log(`🌐 Panel: http://localhost:${PORT}`);
     console.log(`🔐 Login: /login.html`);
     console.log(`🎛️ Dashboard: /index.html`);
-    console.log(`🤖 Bot: ${settings.botName} · ${settings.botVersion || 'V16-ULTRA'}`);
+    console.log(`🤖 Bot: ${settings.botName} · ${settings.botVersion || 'V17-ULTRA'}`);
     console.log(`🔣 Prefixes: ${PREFIXES.join('  ')}`);
-    console.log(`♾️ INFINITE MODE: ENABLED`);
-    console.log(`🔒 LIFETIME CONNECTION: ENABLED`);
-    console.log(`🎯 PER-SESSION START/STOP: ENABLED`);
+    console.log(`♾️ PERMANENT CONNECTION: ENABLED`);
+    console.log(`⚡ INSTANT RESPONSE: ENABLED`);
+    console.log(`🎯 TYPING DOTS: ACTIVE`);
     console.log(`💾 STATE PERSISTENCE: data/session_states.json`);
-    console.log(`🤖 AI: ${openai ? `READY (${process.env.AI_MODEL || 'llama-3.1-8b-instant'})` : 'OFFLINE (no key)'}`);
-    console.log(`🖼️ Loading logo into RAM...`);
+    console.log(`🤖 AI: ${openai ? `READY` : 'OFFLINE (no key)'}`);
+    console.log(`🖼️ Preloading logo into RAM...`);
 
-    await ensureLogo(10);
-    if (LOGO_BUFFER) console.log(`✅ Logo cached (${LOGO_BUFFER.length} bytes) · /logo.png`);
-    else console.log(`⚠️ Logo will be fetched on demand`);
+    // Preload logo in background — do NOT block startup
+    preloadLogo().then(() => {
+        if (LOGO_BUFFER) console.log(`✅ Logo cached (${LOGO_BUFFER.length} bytes) · /logo.png`);
+    }).catch(() => {});
 
     measurePing().catch(() => {});
 
-    loadExistingSessions();
-    startInfiniteSupervisor();
+    setTimeout(() => {
+        loadExistingSessions();
+        startSupervisor();
+    }, 1000);
 
     const APP_URL = process.env.APP_URL || `http://localhost:${PORT}`;
     setInterval(async () => {
