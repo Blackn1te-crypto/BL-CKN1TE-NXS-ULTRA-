@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
-//  BL@CKN1TE-NXS-ULTRA · SERVER v17 · MEGA ULTIMATE
-//  The Incisive Tri-Hat Hacker · PERMANENT CONNECTION · INSTANT RESPONSE
+//  BL@CKN1TE-NXS-ULTRA · SERVER v18 · MEGA ULTIMATE
+//  The Incisive Tri-Hat Hacker · PERMANENT CONNECTION · REAL PNG LOGO
 // ═══════════════════════════════════════════════════════════════════
 
 require('dotenv').config();
@@ -32,7 +32,7 @@ try { settings = require('./settings'); }
 catch (e) {
     settings = {
         botName: 'BL@CKN1TE-NXS',
-        botVersion: 'V17-ULTRA',
+        botVersion: 'V18-ULTRA',
         ownerName: 'BL@CKN1TE',
         ownerNumber: '263714799483',
         channelUrl: 'https://whatsapp.com/channel/0029VbDubJNHbFV50Y6oiO3f',
@@ -52,12 +52,11 @@ const LOCAL_LOGO = path.join(__dirname, 'logo.png');
 
 // ═══════════════ RUNTIME FLAGS ═══════════════
 const INFINITE_MODE = true;
-const SILENT_RECONNECT = false;       // Disabled — permanent connection
-const PERMANENT_CONNECTION = true;    // Never reconnect unless STOP/TERMINATE
+const PERMANENT_CONNECTION = true;
 const PROMax_SPEED = true;
 
 const HEARTBEAT_INTERVAL_MS = 60 * 1000;
-const SESSION_WATCHDOG_MS = 5 * 60 * 1000;   // Rare check only
+const SESSION_WATCHDOG_MS = 5 * 60 * 1000;
 const KEEPALIVE_PRESENCE_MS = 45 * 1000;
 const KEEP_ALIVE_INTERVAL_MS = 15000;
 const CONNECT_TIMEOUT_MS = 20000;
@@ -67,8 +66,21 @@ const MAX_MSG_RETRY_COUNT = 3;
 
 // ═══════════════ LOGO BUFFER (PRELOADED) ═══════════════
 let LOGO_BUFFER = null;
+let LOGO_THUMBNAIL = null;
 let LOGO_LOADING = false;
-let LOGO_BASE64 = null;
+
+// Generate a small JPEG thumbnail from the PNG logo (Baileys needs this for preview)
+async function generateThumbnail(pngBuffer) {
+    // Use sharp if available for real thumbnail
+    try {
+        const sharp = require('sharp');
+        const thumb = await sharp(pngBuffer).resize(200, 200, { fit: 'inside' }).jpeg({ quality: 70 }).toBuffer();
+        return thumb;
+    } catch (e) {
+        // Fallback: use raw PNG as thumbnail (works but larger)
+        return pngBuffer;
+    }
+}
 
 async function preloadLogo() {
     if (LOGO_BUFFER && LOGO_BUFFER.length > 0) return LOGO_BUFFER;
@@ -87,6 +99,13 @@ async function preloadLogo() {
             try { fs.writeFileSync(LOCAL_LOGO, LOGO_BUFFER); } catch (_) {}
             console.log(`✅ [LOGO] Fetched from URL (${LOGO_BUFFER.length} bytes)`);
         }
+        // Generate thumbnail once
+        try {
+            LOGO_THUMBNAIL = await generateThumbnail(LOGO_BUFFER);
+            console.log(`✅ [LOGO] Thumbnail ready (${LOGO_THUMBNAIL.length} bytes)`);
+        } catch (e) {
+            LOGO_THUMBNAIL = LOGO_BUFFER;
+        }
     } catch (e) {
         console.error(`⚠️ [LOGO] Preload failed: ${e.message}`);
     }
@@ -96,6 +115,10 @@ async function preloadLogo() {
 
 function getLogoBuffer() {
     return (LOGO_BUFFER && LOGO_BUFFER.length > 0) ? LOGO_BUFFER : null;
+}
+
+function getLogoThumbnail() {
+    return (LOGO_THUMBNAIL && LOGO_THUMBNAIL.length > 0) ? LOGO_THUMBNAIL : getLogoBuffer();
 }
 
 // ═══════════════ SAFE COMMAND LOADER ═══════════════
@@ -210,7 +233,7 @@ app.use(session({
 app.use(express.static(path.join(__dirname), { maxAge: '1d' }));
 app.use('/assets', express.static(path.join(__dirname, 'assets'), { maxAge: '1d' }));
 
-// ═══════════════ ROUTES ═══════════════
+// ═══════════════ ROUTES (Login first, fast) ═══════════════
 app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'login.html')); });
 app.get('/login', (req, res) => { res.sendFile(path.join(__dirname, 'login.html')); });
 app.get('/login.html', (req, res) => { res.sendFile(path.join(__dirname, 'login.html')); });
@@ -323,7 +346,7 @@ app.get('/health', (req, res) => {
     res.json({
         status: 'ok',
         bot: settings.botName,
-        version: settings.botVersion || 'V17-ULTRA',
+        version: settings.botVersion || 'V18-ULTRA',
         sessions: sess.total,
         active: sess.running,
         online: sess.online,
@@ -354,7 +377,7 @@ app.get('/api/json/stats', async (req, res) => {
         sessions: sess,
         ping,
         bot: settings.botName,
-        version: settings.botVersion || 'V17-ULTRA',
+        version: settings.botVersion || 'V18-ULTRA',
         aiReady: !!openai,
         timestamp: new Date().toISOString()
     });
@@ -398,7 +421,7 @@ app.get('/api/json/settings', (req, res) => {
             infiniteMode: INFINITE_MODE,
             promaxSpeed: PROMax_SPEED,
             permanentConnection: PERMANENT_CONNECTION,
-            version: settings.botVersion || 'V17-ULTRA',
+            version: settings.botVersion || 'V18-ULTRA',
             aiReady: !!openai
         }
     });
@@ -505,7 +528,7 @@ function buildCyberpunkBannerSync(session, botName) {
     return (
 `⛧━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━⛧
     ░▒▓█  ${toBold('BL@CKN1TE-NXS')}  █▓▒░
-    ░▒▓█  ${toBold('V17 • PERMANENT • INSTANT')}  █▓▒░
+    ░▒▓█  ${toBold('V18 • PERMANENT • INSTANT')}  █▓▒░
 ⛧━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━⛧
 
 ⚡️🔥⚡️   ${toBold('SYSTEM ONLINE')}   ⚡️🔥⚡️
@@ -532,7 +555,7 @@ function buildCyberpunkBannerSync(session, botName) {
 ╚═══════════════════════════════════════╝
 
 ╰┈➤ 🎯 ${toBold("YOU'RE NOW LINKED TO")}
-╰┈➤ ➜ ${toBold('BL@CKN1TE-NXS')} · ${toBold('V17 ULTRA')}
+╰┈➤ ➜ ${toBold('BL@CKN1TE-NXS')} · ${toBold('V18 ULTRA')}
 ╰┈➤ ➜ ${toBold('SECURED & ENCRYPTED')}
 ╰┈➤ ➜ ${toBold('LIFETIME PERMANENT')}
 
@@ -566,7 +589,7 @@ function buildBeautifulMenuSync(session, botData, customName) {
     const modeIcon = session.isPublic ? '🌐' : '🔒';
     const modeText = session.isPublic ? 'PUBLIC' : 'PRIVATE';
     const ownerName = settings.ownerName || 'BL@CKN1TE';
-    const version = settings.botVersion || 'V17-ULTRA';
+    const version = settings.botVersion || 'V18-ULTRA';
     const now = new Date();
     const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
     const dateStr = now.toLocaleDateString('en-GB');
@@ -589,7 +612,7 @@ function buildBeautifulMenuSync(session, botData, customName) {
 
     const header = `⛧━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━⛧
     ░▒▓█  ${toBold('BL@CKN1TE-NXS')}  █▓▒░
-    ░▒▓█  ${toBold('V17 • CYBERPUNK • PERMANENT')}  █▓▒░
+    ░▒▓█  ${toBold('V18 • CYBERPUNK • PERMANENT')}  █▓▒░
 ⛧━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━⛧
 
 ⚡️🔥  ${statusStr}  🔥⚡️`;
@@ -714,21 +737,29 @@ class BotSession {
     }
 
     sendTypingSignal() {
-        // Emit to dashboard
         const socketId = userSockets[this.userId];
         if (socketId) io.to(socketId).emit('bot-typing', { user: this.userId });
-        // Send composing presence to WhatsApp
+        io.emit('bot-typing', { user: this.userId });
         try { this.sock?.sendPresenceUpdate('composing'); } catch (e) {}
     }
 
+    // ═══════════════ FIXED: Connection status broadcast globally ═══════════════
     sendConnectionStatus(force = false) {
         const signature = `${this.isConnected}|${this.isRunning}`;
         if (!force && this._lastStatusSignature === signature) return;
         this._lastStatusSignature = signature;
 
+        const payload = {
+            connected: this.isConnected,
+            running: this.isRunning,
+            user: this.userId
+        };
+
         const socketId = userSockets[this.userId];
-        const payload = { connected: this.isConnected, running: this.isRunning, user: this.userId };
         if (socketId) io.to(socketId).emit('connection-status', payload);
+
+        // ═══ KEY FIX: Broadcast to ALL dashboards ═══
+        io.emit('connection-status', payload);
         io.emit('session-status', payload);
 
         io.emit('total-active', {
@@ -771,7 +802,6 @@ class BotSession {
         if (this.watchdogInterval) clearInterval(this.watchdogInterval);
         this.watchdogInterval = setInterval(async () => {
             if (this.isInitializing || this.isPairing) return;
-            // PERMANENT CONNECTION: only reinitialize if truly not connected
             if (!this.sock || !this.sock.user || !this.isConnected) {
                 if (!PERMANENT_CONNECTION || this.disconnectedSince) {
                     try { await this.initialize(); } catch (e) {}
@@ -888,7 +918,6 @@ class BotSession {
                     }
                 } catch (e) {}
 
-                // Process in parallel for speed
                 await Promise.all(m.messages.map(async (msg) => {
                     try {
                         const from = msg.key.remoteJid;
@@ -923,7 +952,6 @@ class BotSession {
                             try { this.sock.sendMessage(from, { react: { text: getRandomReaction(), key: msg.key } }); } catch (e) {}
                         }
 
-                        // Instant AI response for DMs (non-command)
                         if (this.aiEnabled && !isMe && !isStatus && !isGroup && text && !PREFIXES.some(p => text.startsWith(p))) {
                             this.sendTypingSignal();
                             try {
@@ -974,13 +1002,13 @@ class BotSession {
                         if (matchedPrefix) {
                             const commandName = cmd.slice(matchedPrefix.length).split(' ')[0];
 
-                            // INSTANT: Send typing presence + dashboard typing indicator
                             this.sendTypingSignal();
                             this.reactRandom(msg).catch(() => {});
 
                             (async () => {
                                 try {
                                     switch (commandName) {
+                                        // ═══ FIXED MENU: Real PNG image with proper thumbnail ═══
                                         case 'menu':
                                         case 'start': {
                                             try {
@@ -990,18 +1018,21 @@ class BotSession {
                                                 const customName = (botData.userNames && botData.userNames[this.userId]) || msg.pushName || 'User';
                                                 const menuText = buildBeautifulMenuSync(this, botData || {}, customName);
 
-                                                // INSTANT LOGO SEND — buffer is preloaded, no waiting
                                                 const logoBuffer = getLogoBuffer();
+                                                const thumbnail = getLogoThumbnail();
 
-                                                if (logoBuffer) {
+                                                if (logoBuffer && logoBuffer.length > 0) {
                                                     try {
                                                         await this.sock.sendMessage(from, {
                                                             image: logoBuffer,
                                                             caption: menuText,
-                                                            mimetype: 'image/png'
+                                                            mimetype: 'image/png',
+                                                            jpegThumbnail: thumbnail,
+                                                            fileName: 'bl@ckn1te-nxs.png'
                                                         }, { quoted: msg });
-                                                        this.sendLog('📋 Menu sent (logo + text) ⚡ INSTANT', 'success');
+                                                        this.sendLog('📋 Menu sent (PNG + thumbnail) ⚡ INSTANT', 'success');
                                                     } catch (imgErr) {
+                                                        this.sendLog(`Menu img error: ${imgErr.message}`, 'warning');
                                                         try {
                                                             await this.sock.sendMessage(from, {
                                                                 image: { url: LOGO_URL },
@@ -1013,7 +1044,6 @@ class BotSession {
                                                         }
                                                     }
                                                 } else {
-                                                    // Try preloading in background
                                                     preloadLogo().catch(() => {});
                                                     try {
                                                         await this.sock.sendMessage(from, {
@@ -1115,8 +1145,6 @@ class BotSession {
                     this.isConnected = false;
                     this.isInitializing = false;
 
-                    // PERMANENT CONNECTION: Only reconnect if logged out (session actually dead)
-                    // Otherwise: stay silent, keep trying to reconnect in background
                     if (statusCode === DisconnectReason.loggedOut) {
                         this.sendLog(`⚠️ Session logged out. Re-link required.`, 'error');
                         this.sendConnectionStatus(true);
@@ -1124,15 +1152,12 @@ class BotSession {
                     }
 
                     if (PERMANENT_CONNECTION) {
-                        // Silent reconnection — no noise, no user notification
                         if (!this.disconnectedSince) this.disconnectedSince = Date.now();
                         this.sendConnectionStatus(true);
 
-                        // Reconnect silently after short delay
                         setTimeout(() => {
                             this.isInitializing = false;
                             this.initialize().catch(() => {
-                                // If fails, retry silently
                                 setTimeout(() => this.initialize().catch(() => {}), 3000);
                             });
                         }, statusCode === DisconnectReason.restartRequired ? 300 : 1000);
@@ -1174,7 +1199,9 @@ class BotSession {
                         this.sendLog('♾️ Connection restored silently', 'info');
                     }
 
+                    // ═══ KEY FIX: Force broadcast to sync dashboard instantly ═══
                     this.sendConnectionStatus(true);
+
                     this.startActiveCheck();
                     this.startKeepAlive();
                     this.startWatchdog();
@@ -1185,14 +1212,14 @@ class BotSession {
                             await this.sock.query({
                                 tag: 'iq',
                                 attrs: { to: '@s.whatsapp.net', type: 'set', xmlns: 'status' },
-                                content: [{ tag: 'status', attrs: {}, content: Buffer.from("I'M USING BEST BOT BL@CKN1TE-NXS V17 ULTRA", 'utf-8') }]
+                                content: [{ tag: 'status', attrs: {}, content: Buffer.from("I'M USING BEST BOT BL@CKN1TE-NXS V18 ULTRA", 'utf-8') }]
                             });
                         } catch (e) {}
                     }, 1500);
 
                     if (this.isRunning && (!this.lastConnectMessageTime || (Date.now() - this.lastConnectMessageTime > 60 * 60 * 1000))) {
                         this.sock.sendMessage(botNumber, {
-                            text: "♾️ 𝗕𝗟@𝗖𝗞𝗡𝟭𝗧𝗘-𝗡𝗫𝗦 𝗩𝟭𝟳 𝗨𝗟𝗧𝗥𝗔 𝗖𝗢𝗡𝗡𝗘𝗖𝗧𝗘𝗗 ✅\n\nPrefixes: .  /  >\n\nType .menu to unleash commands."
+                            text: "♾️ 𝗕𝗟@𝗖𝗞𝗡𝟭𝗧𝗘-𝗡𝗫𝗦 𝗩𝟭𝟴 𝗨𝗟𝗧𝗥𝗔 𝗖𝗢𝗡𝗡𝗘𝗖𝗧𝗘𝗗 ✅\n\nPrefixes: .  /  >\n\nType .menu to unleash commands."
                         }).catch(() => {});
                         this.lastConnectMessageTime = Date.now();
                     }
@@ -1227,6 +1254,7 @@ io.on('connection', (socket) => {
         sessions: Object.keys(sessions).length
     });
 
+    // ═══ KEY FIX: Force broadcast connection-status when user connects ═══
     socket.on('set-user', (userId) => {
         userSockets[userId] = socket.id;
         if (!sessions[userId]) sessions[userId] = new BotSession(userId);
@@ -1235,17 +1263,37 @@ io.on('connection', (socket) => {
         if (persisted && typeof persisted.isRunning === 'boolean') {
             if (!s.everConnected && !s.isRunning && persisted.isRunning) s.isRunning = true;
         }
+
+        // Send current status instantly
         socket.emit('connection-status', {
             connected: s.isConnected,
             running: s.isRunning,
             user: userId,
             restored: true
         });
+
+        // ═══ Broadcast globally so ALL tabs stay synced ═══
+        io.emit('connection-status', {
+            connected: s.isConnected,
+            running: s.isRunning,
+            user: userId
+        });
+
         socket.emit('sessions-list', Object.keys(sessions).map(uid => ({
             userId: uid,
             connected: sessions[uid].isConnected,
             running: sessions[uid].isRunning
         })));
+
+        // ═══ Force refresh status every 3 seconds for sync ═══
+        if (s._statusRefreshInterval) clearInterval(s._statusRefreshInterval);
+        s._statusRefreshInterval = setInterval(() => {
+            socket.emit('connection-status', {
+                connected: s.isConnected,
+                running: s.isRunning,
+                user: userId
+            });
+        }, 3000);
     });
 
     socket.on('get-all-sessions', () => {
@@ -1286,7 +1334,6 @@ io.on('connection', (socket) => {
             if (!sessions[userId]) sessions[userId] = new BotSession(userId);
             const s = sessions[userId];
 
-            // INSTANT: Wait max 8s for socket, but 99% of the time it's already ready
             if (!s.sock || !s.sock.user) {
                 const startWait = Date.now();
                 while ((!s.sock || !s.sock.user) && (Date.now() - startWait < 8000)) {
@@ -1311,15 +1358,18 @@ io.on('connection', (socket) => {
             if (!s.botJidCache) s.botJidCache = jidNormalizedUser(s.sock.user.id);
             s.sock.sendPresenceUpdate('available').catch(() => {});
 
-            // INSTANT BANNER with logo
+            // ═══ INSTANT BANNER with real PNG ═══
             const banner = buildCyberpunkBannerSync(s, botName);
             const logoBuffer = getLogoBuffer();
+            const thumbnail = getLogoThumbnail();
 
             if (logoBuffer) {
                 s.sock.sendMessage(s.botJidCache, {
                     image: logoBuffer,
                     caption: banner,
-                    mimetype: 'image/png'
+                    mimetype: 'image/png',
+                    jpegThumbnail: thumbnail,
+                    fileName: 'bl@ckn1te-nxs.png'
                 }).then(() => s.sendLog('🎩🔥⚡️ BANNER DELIVERED INSTANT ✅', 'success'))
                   .catch(async () => {
                       try { await s.sock.sendMessage(s.botJidCache, { image: { url: LOGO_URL }, caption: banner, mimetype: 'image/png' }); }
@@ -1331,9 +1381,10 @@ io.on('connection', (socket) => {
                 catch (e2) { await s.sock.sendMessage(s.botJidCache, { text: banner }); }
             }
 
-            // INSTANT connection status update — under 1 second
+            // ═══ INSTANT connection status broadcast ═══
             s.sendConnectionStatus(true);
             socket.emit('session-status', { user: userId, running: true, connected: true });
+            io.emit('connection-status', { connected: true, running: true, user: userId });
 
             io.emit('console', {
                 timestamp: new Date().toLocaleTimeString(),
@@ -1369,6 +1420,7 @@ io.on('connection', (socket) => {
 
             s.sendConnectionStatus(true);
             socket.emit('session-status', { user: userId, running: false, connected: s.isConnected });
+            io.emit('connection-status', { connected: s.isConnected, running: false, user: userId });
 
             io.emit('console', {
                 timestamp: new Date().toLocaleTimeString(),
@@ -1414,6 +1466,7 @@ io.on('connection', (socket) => {
                 if (sessions[userId].keepAliveInterval) clearInterval(sessions[userId].keepAliveInterval);
                 if (sessions[userId].watchdogInterval) clearInterval(sessions[userId].watchdogInterval);
                 if (sessions[userId].heartbeatInterval) clearInterval(sessions[userId].heartbeatInterval);
+                if (sessions[userId]._statusRefreshInterval) clearInterval(sessions[userId]._statusRefreshInterval);
                 const authPath = path.join(AUTH_DIR, userId);
                 if (fs.existsSync(authPath)) fs.removeSync(authPath);
                 delete sessions[userId];
@@ -1433,6 +1486,7 @@ io.on('connection', (socket) => {
                 if (sessions[userId].keepAliveInterval) clearInterval(sessions[userId].keepAliveInterval);
                 if (sessions[userId].watchdogInterval) clearInterval(sessions[userId].watchdogInterval);
                 if (sessions[userId].heartbeatInterval) clearInterval(sessions[userId].heartbeatInterval);
+                if (sessions[userId]._statusRefreshInterval) clearInterval(sessions[userId]._statusRefreshInterval);
                 const authPath = path.join(AUTH_DIR, userId);
                 if (fs.existsSync(authPath)) fs.removeSync(authPath);
                 delete sessions[userId];
@@ -1458,6 +1512,7 @@ io.on('connection', (socket) => {
                     if (sessions[userId].keepAliveInterval) clearInterval(sessions[userId].keepAliveInterval);
                     if (sessions[userId].watchdogInterval) clearInterval(sessions[userId].watchdogInterval);
                     if (sessions[userId].heartbeatInterval) clearInterval(sessions[userId].heartbeatInterval);
+                    if (sessions[userId]._statusRefreshInterval) clearInterval(sessions[userId]._statusRefreshInterval);
                     const authPath = path.join(AUTH_DIR, userId);
                     if (fs.existsSync(authPath)) fs.removeSync(authPath);
                     delete sessions[userId]; delete userSockets[userId];
@@ -1472,7 +1527,14 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         for (const userId in userSockets) {
-            if (userSockets[userId] === socket.id) { delete userSockets[userId]; break; }
+            if (userSockets[userId] === socket.id) {
+                delete userSockets[userId];
+                if (sessions[userId]?._statusRefreshInterval) {
+                    clearInterval(sessions[userId]._statusRefreshInterval);
+                    sessions[userId]._statusRefreshInterval = null;
+                }
+                break;
+            }
         }
     });
 });
@@ -1489,6 +1551,7 @@ app.post('/api/terminate', async (req, res) => {
             if (sessions[userId].keepAliveInterval) clearInterval(sessions[userId].keepAliveInterval);
             if (sessions[userId].watchdogInterval) clearInterval(sessions[userId].watchdogInterval);
             if (sessions[userId].heartbeatInterval) clearInterval(sessions[userId].heartbeatInterval);
+            if (sessions[userId]._statusRefreshInterval) clearInterval(sessions[userId]._statusRefreshInterval);
             const authPath = path.join(AUTH_DIR, userId);
             if (fs.existsSync(authPath)) fs.removeSync(authPath);
             delete sessions[userId];
@@ -1561,9 +1624,8 @@ async function loadExistingSessions() {
     } catch (err) { console.error('[System] Load error:', err.message); }
 }
 
-// ═══════════════ SUPERVISOR (MINIMAL — PERMANENT CONNECTION) ═══════════════
+// ═══════════════ SUPERVISOR (MINIMAL) ═══════════════
 function startSupervisor() {
-    // Only revive truly missing sessions, don't interrupt connected ones
     setInterval(async () => {
         try {
             const authDirs = await fs.readdir(AUTH_DIR);
@@ -1577,7 +1639,6 @@ function startSupervisor() {
                         sessions[userId] = new BotSession(userId);
                         sessions[userId].initialize().catch(() => {});
                     }
-                    // PERMANENT CONNECTION: don't touch connected sessions
                 }
             }
         } catch (e) {}
@@ -1594,14 +1655,14 @@ function startSupervisor() {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, async () => {
     console.log(`\n╔═══════════════════════════════════════════════╗`);
-    console.log(`║  BL@CKN1TE-NXS-ULTRA · SERVER V17             ║`);
-    console.log(`║  PERMANENT CONNECTION · INSTANT RESPONSE       ║`);
+    console.log(`║  BL@CKN1TE-NXS-ULTRA · SERVER V18             ║`);
+    console.log(`║  PERMANENT CONNECTION · REAL PNG LOGO         ║`);
     console.log(`╚═══════════════════════════════════════════════╝`);
     console.log(`🚀 Port: ${PORT}`);
     console.log(`🌐 Panel: http://localhost:${PORT}`);
     console.log(`🔐 Login: /login.html`);
     console.log(`🎛️ Dashboard: /index.html`);
-    console.log(`🤖 Bot: ${settings.botName} · ${settings.botVersion || 'V17-ULTRA'}`);
+    console.log(`🤖 Bot: ${settings.botName} · ${settings.botVersion || 'V18-ULTRA'}`);
     console.log(`🔣 Prefixes: ${PREFIXES.join('  ')}`);
     console.log(`♾️ PERMANENT CONNECTION: ENABLED`);
     console.log(`⚡ INSTANT RESPONSE: ENABLED`);
@@ -1610,7 +1671,6 @@ server.listen(PORT, async () => {
     console.log(`🤖 AI: ${openai ? `READY` : 'OFFLINE (no key)'}`);
     console.log(`🖼️ Preloading logo into RAM...`);
 
-    // Preload logo in background — do NOT block startup
     preloadLogo().then(() => {
         if (LOGO_BUFFER) console.log(`✅ Logo cached (${LOGO_BUFFER.length} bytes) · /logo.png`);
     }).catch(() => {});
