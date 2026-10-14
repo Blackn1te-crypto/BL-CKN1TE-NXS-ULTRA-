@@ -1,57 +1,49 @@
 {
   "name": "blacknite-nxs-ultra",
-  "version": "16.0.0",
-  "description": "BL@CKN1TE-NXS-ULTRA · Multi-Device WhatsApp Bot Control Panel · The Incisive Tri-Hat Hacker",
+  "version": "18.0.0",
+  "description": "BL@CKN1TE-NXS-ULTRA · Multi-Device WhatsApp Bot · The Incisive Tri-Hat Hacker",
   "main": "server.js",
+  "author": "BL@CKN1TE",
+  "license": "MIT",
+  "private": true,
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js",
-    "pm2": "pm2 start server.js --name blacknite-ultra",
-    "pm2:stop": "pm2 stop blacknite-ultra",
-    "pm2:restart": "pm2 restart blacknite-ultra",
-    "pm2:logs": "pm2 logs blacknite-ultra"
-  },
-  "keywords": [
-    "whatsapp", "bot", "baileys", "blacknite", "nexus",
-    "multi-device", "automation", "cyberpunk", "ultra"
-  ],
-  "author": {
-    "name": "BL@CKN1TE",
-    "alias": "The Incisive Tri-Hat Hacker",
-    "contact": "+263714799483"
-  },
-  "license": "MIT",
-  "engines": {
-    "node": ">=18.0.0"
+    "dev": "node server.js",
+    "postinstall": "node -e \"console.log('✅ BL@CKN1TE-NXS-ULTRA dependencies installed')\""
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "^6.7.0",
-    "axios": "^1.7.0",
-    "chalk": "^4.1.2",
+    "@whiskeysockets/baileys": "^6.7.9",
+    "axios": "^1.7.7",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "express-session": "^1.18.0",
+    "express": "^4.21.1",
+    "express-session": "^1.18.1",
     "fs-extra": "^11.2.0",
-    "moment-timezone": "^0.5.45",
     "node-cache": "^5.1.2",
-    "openai": "^4.52.0",
-    "pino": "^9.2.0",
-    "qrcode-terminal": "^0.12.0",
-    "socket.io": "^4.7.5",
-    "uuid": "^10.0.0"
+    "openai": "^4.77.0",
+    "pino": "^9.5.0",
+    "sharp": "^0.33.5",
+    "socket.io": "^4.8.1"
   },
-  "devDependencies": {
-    "nodemon": "^3.1.0"
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
   },
-  "optionalDependencies": {
-    "bufferutil": "^4.0.8",
-    "utf-8-validate": "^6.0.3"
-  },
+  "keywords": [
+    "whatsapp",
+    "bot",
+    "baileys",
+    "multi-device",
+    "blacknite",
+    "nexus",
+    "ultra",
+    "cyberpunk"
+  ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Blackn1te-crypto/BLACKN1TE-NXS-ULTRA.git"
+    "url": "https://github.com/Blackn1te-crypto/BLACKN1TE-NXS.git"
   },
   "bugs": {
     "url": "https://wa.me/263714799483"
-  }
+  },
+  "homepage": "https://whatsapp.com/channel/0029VbDubJNHbFV50Y6oiO3f"
 }
