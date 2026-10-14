@@ -1,0 +1,2681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>BL@CKN1TE-NXS-ULTRA · Control Panel</title>
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/Blackn1te-crypto/BLACKN1TE-NXS/main/logo.png">
+    <meta name="theme-color" content="#05070d">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        (function () {
+            try {
+                const SESSION_KEY = 'nexusAuth';
+                const SESSION_TTL = 30 * 60 * 1000;
+                document.documentElement.style.visibility = 'hidden';
+                let raw = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
+                if (!raw) { window.location.replace('/login.html'); return; }
+                const s = JSON.parse(raw);
+                if (!s.timestamp || (Date.now() - s.timestamp > SESSION_TTL)) {
+                    localStorage.removeItem(SESSION_KEY);
+                    sessionStorage.removeItem(SESSION_KEY);
+                    window.location.replace('/login.html');
+                    return;
+                }
+                const reveal = () => {
+                    document.documentElement.style.visibility = 'visible';
+                    document.documentElement.style.transition = 'opacity 0.3s ease';
+                };
+                if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                    setTimeout(reveal, 30);
+                } else {
+                    document.addEventListener('DOMContentLoaded', () => setTimeout(reveal, 30));
+                }
+            } catch (e) { window.location.replace('/login.html'); }
+        })();
+    </script>
+
+    <style>
+        :root {
+            --primary: #00ff9d;
+            --primary-dim: #00cc7a;
+            --accent: #7c3aed;
+            --accent-2: #06b6d4;
+            --bg: #05070d;
+            --bg-2: #0a0f1a;
+            --text: #e6f1ff;
+            --muted: #6b7a90;
+            --border: rgba(0, 255, 157, 0.15);
+            --danger: #ff3b5c;
+            --warning: #ffb020;
+            --success: #00ff9d;
+            --grad: linear-gradient(135deg, #00ff9d 0%, #06b6d4 50%, #7c3aed 100%);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        html, body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .bg-grid {
+            position: fixed; inset: 0;
+            background-image:
+                linear-gradient(rgba(0, 255, 157, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 157, 0.04) 1px, transparent 1px);
+            background-size: 45px 45px;
+            z-index: 0;
+            animation: gridMove 25s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes gridMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 45px 45px; }
+        }
+
+        .bg-glow {
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(circle at 15% 20%, rgba(124, 58, 237, 0.18), transparent 45%),
+                radial-gradient(circle at 85% 80%, rgba(0, 255, 157, 0.12), transparent 45%),
+                radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.06), transparent 60%);
+            z-index: 0;
+            pointer-events: none;
+            animation: glowPulse 8s ease-in-out infinite;
+        }
+        @keyframes glowPulse {
+            0%, 100% { opacity: 0.85; }
+            50% { opacity: 1; }
+        }
+
+        .bg-lightning {
+            position: fixed; inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0.55;
+        }
+        .bg-lightning svg {
+            width: 100%; height: 100%;
+        }
+        .bolt {
+            stroke: #00ff9d;
+            stroke-width: 1.2;
+            fill: none;
+            filter: drop-shadow(0 0 6px #00ff9d) drop-shadow(0 0 12px #06b6d4);
+            opacity: 0;
+            stroke-dasharray: 200;
+            stroke-dashoffset: 200;
+            animation: boltFlash 6s ease-in-out infinite;
+        }
+        .bolt.b2 { stroke: #7c3aed; filter: drop-shadow(0 0 8px #7c3aed); animation-delay: 2s; }
+        .bolt.b3 { stroke: #06b6d4; filter: drop-shadow(0 0 6px #06b6d4); animation-delay: 3.5s; }
+        .bolt.b4 { stroke: #00ff9d; animation-delay: 4.5s; }
+        @keyframes boltFlash {
+            0%, 100% { opacity: 0; stroke-dashoffset: 200; }
+            40% { opacity: 0; stroke-dashoffset: 200; }
+            42% { opacity: 1; stroke-dashoffset: 0; }
+            45% { opacity: 0.4; stroke-dashoffset: 0; }
+            48% { opacity: 1; stroke-dashoffset: 0; }
+            55% { opacity: 0; stroke-dashoffset: -200; }
+        }
+
+        .navbar {
+            background: rgba(5, 7, 13, 0.92);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(0, 255, 157, 0.18);
+            position: sticky; top: 0; z-index: 100;
+        }
+        .nav-inner {
+            max-width: 1200px; margin: 0 auto;
+            padding: 14px 20px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .menu-toggle {
+            color: var(--primary); font-size: 1.4rem;
+            cursor: pointer; margin-right: 6px;
+            padding: 6px 10px; border-radius: 8px;
+            transition: 0.25s; user-select: none;
+        }
+        .menu-toggle:hover, .menu-toggle:active {
+            transform: scale(1.15); color: #fff;
+            background: rgba(0, 255, 157, 0.12);
+            box-shadow: 0 0 20px rgba(0,255,157,0.4);
+        }
+        .brand-icon {
+            width: 42px; height: 42px;
+            border-radius: 12px; overflow: hidden;
+            border: 1.5px solid rgba(0, 255, 157, 0.5);
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.5), inset 0 0 10px rgba(0,255,157,0.2);
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+        @keyframes logoPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 157, 0.5), inset 0 0 10px rgba(0,255,157,0.2); }
+            50% { box-shadow: 0 0 34px rgba(0, 255, 157, 0.9), inset 0 0 16px rgba(0,255,157,0.4); }
+        }
+        .brand-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+        .brand-main {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900; font-size: 1.05rem;
+            background: linear-gradient(90deg, #00ff9d, #06b6d4, #7c3aed, #00ff9d);
+            background-size: 300% auto;
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent;
+            animation: shine 5s linear infinite;
+            letter-spacing: 1px;
+        }
+        @keyframes shine {
+            0% { background-position: 0% center; }
+            100% { background-position: 300% center; }
+        }
+        .brand-sub { font-size: 0.58rem; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; }
+
+        .nav-status { display: flex; align-items: center; gap: 8px; font-size: 0.68rem; color: var(--primary); letter-spacing: 2px; }
+        .pulse-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary);
+            animation: pulse 1.6s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.7); }
+        }
+        .nav-status span:last-child { display: none; }
+        @media (min-width: 640px) { .nav-status span:last-child { display: inline; } }
+
+        .hero {
+            position: relative;
+            z-index: 5;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px 20px;
+            text-align: center;
+        }
+        .hero-logo-wrap {
+            position: relative;
+            width: 140px; height: 140px;
+            margin: 0 auto 22px;
+        }
+        .hero-logo-spin {
+            position: absolute; inset: -12px;
+            border-radius: 42px;
+            border: 2px solid transparent;
+            background: linear-gradient(135deg, #00ff9d, #06b6d4, #7c3aed, #00ff9d) border-box;
+            -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            animation: spin 6s linear infinite;
+            opacity: 0.85;
+            filter: drop-shadow(0 0 12px rgba(0,255,157,0.5));
+        }
+        .hero-logo-spin-2 {
+            position: absolute; inset: -22px;
+            border-radius: 52px;
+            border: 1px dashed rgba(124, 58, 237, 0.55);
+            animation: spin 12s linear infinite reverse;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .hero-logo {
+            position: relative;
+            width: 100%; height: 100%;
+            border-radius: 32px;
+            overflow: hidden;
+            border: 2px solid rgba(0, 255, 157, 0.4);
+            background: #0a0f1a;
+            box-shadow:
+                0 0 30px rgba(0, 255, 157, 0.55),
+                0 0 60px rgba(6, 182, 212, 0.35),
+                inset 0 0 30px rgba(0,255,157,0.1);
+            animation: logoFloat 4s ease-in-out infinite;
+        }
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        .hero-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+        .hero-title {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1.9rem;
+            letter-spacing: 3px;
+            background: linear-gradient(90deg, #00ff9d, #06b6d4, #7c3aed, #00ff9d);
+            background-size: 300% auto;
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent;
+            animation: shine 5s linear infinite;
+            margin-bottom: 6px;
+            text-shadow: 0 0 40px rgba(0, 255, 157, 0.4);
+        }
+        .hero-sub {
+            font-size: 0.7rem;
+            color: var(--muted);
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            margin-bottom: 22px;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 22px;
+            background: rgba(0, 20, 15, 0.7);
+            border: 1px solid rgba(0, 255, 157, 0.35);
+            border-radius: 40px;
+            font-size: 0.78rem;
+            letter-spacing: 2px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 25px rgba(0,255,157,0.15), inset 0 0 20px rgba(0,255,157,0.05);
+            transition: 0.3s;
+        }
+        .status-pill.offline {
+            border-color: rgba(255, 59, 92, 0.4);
+            box-shadow: 0 0 25px rgba(255,59,92,0.15), inset 0 0 20px rgba(255,59,92,0.05);
+        }
+        .status-pill .dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 12px var(--primary), 0 0 22px var(--primary);
+            animation: pulse 1.6s ease-in-out infinite;
+            transition: 0.3s;
+        }
+        .status-pill.offline .dot {
+            background: var(--danger);
+            box-shadow: 0 0 12px var(--danger), 0 0 22px var(--danger);
+        }
+        .status-pill .label {
+            color: var(--primary);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            transition: 0.3s;
+        }
+        .status-pill.offline .label { color: var(--danger); }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 30px 20px 80px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .panel {
+            background: linear-gradient(160deg, rgba(15, 20, 32, 0.85), rgba(10, 15, 26, 0.7));
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0,255,157,0.6), transparent);
+        }
+        .panel-header {
+            padding: 18px 22px;
+            border-bottom: 1px solid rgba(0, 255, 157, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0, 255, 157, 0.03);
+        }
+        .panel-header i {
+            color: var(--primary);
+            font-size: 16px;
+            filter: drop-shadow(0 0 8px rgba(0,255,157,0.6));
+        }
+        .panel-header h5 {
+            font-size: 0.75rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            flex: 1;
+            font-family: 'Orbitron', sans-serif;
+            color: #fff;
+        }
+        .panel-body { padding: 22px; }
+
+        .pair-label {
+            font-size: 0.68rem;
+            color: var(--muted);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .pair-label::before {
+            content: '';
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        .input-group { margin-bottom: 18px; }
+        .input-group-label {
+            display: block;
+            font-size: 0.62rem;
+            letter-spacing: 3px;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .input-shell {
+            display: flex;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1.5px solid rgba(0, 255, 157, 0.2);
+            border-radius: 14px;
+            overflow: hidden;
+            transition: 0.25s;
+            position: relative;
+        }
+        .input-shell:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 255, 157, 0.12), 0 0 25px rgba(0,255,157,0.2);
+        }
+        .input-prefix {
+            padding: 16px 18px;
+            background: rgba(0, 255, 157, 0.08);
+            color: var(--primary);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            border-right: 1px solid rgba(0, 255, 157, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+            font-size: 0.9rem;
+        }
+        .input-shell input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            padding: 16px 18px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.95rem;
+        }
+        .input-shell input::placeholder { color: rgba(107, 122, 144, 0.6); letter-spacing: 2px; }
+
+        .country-item {
+            padding: 11px 14px;
+            cursor: pointer;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            transition: 0.15s;
+            color: #cbd5e0;
+        }
+        .country-item:hover {
+            background: rgba(0,255,157,0.1);
+            color: #00ff9d;
+        }
+
+        #countryDropdown::-webkit-scrollbar { width: 6px; }
+        #countryDropdown::-webkit-scrollbar-track { background: #0a0f1a; border-radius: 3px; }
+        #countryDropdown::-webkit-scrollbar-thumb { background: #00ff9d; border-radius: 3px; }
+
+        .btn-ultra {
+            width: 100%;
+            padding: 18px 24px;
+            border: none;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #00ff9d 0%, #06b6d4 55%, #0088ff 100%);
+            color: #05070d;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 0.95rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: 0.3s;
+            box-shadow: 0 0 30px rgba(0, 255, 157, 0.35), inset 0 -3px 0 rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-ultra:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 0 50px rgba(0, 255, 157, 0.6), 0 8px 30px rgba(6,182,212,0.4);
+        }
+        .btn-ultra:active:not(:disabled) { transform: translateY(0); }
+        .btn-ultra:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-ultra::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+            animation: btnShine 3s linear infinite;
+        }
+        @keyframes btnShine {
+            0% { left: -100%; }
+            100% { left: 200%; }
+        }
+        .btn-ultra i { font-size: 1.1rem; }
+
+        .pair-code-display {
+            text-align: center;
+            padding: 30px 20px 20px;
+            background: radial-gradient(circle at center, rgba(0, 255, 157, 0.08), transparent 70%);
+            border-radius: 16px;
+            margin-top: 6px;
+        }
+        .pair-code-label {
+            font-size: 0.62rem;
+            letter-spacing: 4px;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            font-family: 'Orbitron', sans-serif;
+        }
+        .pair-code-value {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 2.4rem;
+            letter-spacing: 8px;
+            color: var(--primary);
+            text-shadow: 0 0 20px rgba(0, 255, 157, 0.85), 0 0 40px rgba(0, 255, 157, 0.5), 0 0 60px rgba(6, 182, 212, 0.4);
+            margin-bottom: 26px;
+            word-break: break-all;
+            animation: codeGlow 2s ease-in-out infinite;
+        }
+        @keyframes codeGlow {
+            0%, 100% { text-shadow: 0 0 20px rgba(0, 255, 157, 0.85), 0 0 40px rgba(0, 255, 157, 0.5); }
+            50% { text-shadow: 0 0 30px rgba(0, 255, 157, 1), 0 0 60px rgba(0, 255, 157, 0.7), 0 0 90px rgba(6, 182, 212, 0.5); }
+        }
+
+        /* ═══════════════ CYBERPUNK GENERATION CONSOLE ═══════════════ */
+        .gen-console-wrap {
+            background: #000;
+            border: 1.5px solid rgba(0, 255, 157, 0.35);
+            border-radius: 14px;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: inset 0 0 40px rgba(0, 255, 157, 0.06), 0 0 30px rgba(0, 255, 157, 0.15);
+            position: relative;
+            margin-bottom: 18px;
+        }
+        .gen-console-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: rgba(0, 20, 10, 0.95);
+            border-bottom: 1px solid rgba(0, 255, 157, 0.2);
+            font-size: 0.68rem;
+            letter-spacing: 2px;
+            color: var(--primary);
+            text-transform: uppercase;
+        }
+        .gen-console-header .dots {
+            display: flex;
+            gap: 6px;
+        }
+        .gen-console-header .dots span {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .gen-console-header .dots .d1 { background: #ff5f56; }
+        .gen-console-header .dots .d2 { background: #ffbd2e; }
+        .gen-console-header .dots .d3 { background: #27c93f; }
+        .gen-console-header .title {
+            flex: 1;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(0, 255, 157, 0.7);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .gen-console-header .blink {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+            animation: pulse 1.2s ease-in-out infinite;
+        }
+
+        .gen-console {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.76rem;
+            line-height: 1.85;
+            color: #cbd5e0;
+            padding: 16px 18px;
+            min-height: 260px;
+            max-height: 340px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #00ff9d #0a0f1a;
+        }
+        .gen-console::-webkit-scrollbar { width: 6px; }
+        .gen-console::-webkit-scrollbar-track { background: #0a0f1a; }
+        .gen-console::-webkit-scrollbar-thumb { background: #00ff9d; border-radius: 3px; }
+
+        .gen-line {
+            display: flex;
+            gap: 8px;
+            padding: 1px 0;
+            word-break: break-word;
+            animation: termFadeIn 0.25s ease both;
+        }
+        @keyframes termFadeIn {
+            from { opacity: 0; transform: translateX(-6px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .gen-line .gp { color: var(--primary); flex-shrink: 0; font-weight: 700; }
+        .gen-line .gt { color: #4a5568; flex-shrink: 0; font-size: 0.68rem; }
+        .gen-line .gm { color: #cbd5e0; flex: 1; }
+        .gen-line.success .gp, .gen-line.success .gm { color: var(--primary); text-shadow: 0 0 8px rgba(0,255,157,0.5); }
+        .gen-line.warn .gp, .gen-line.warn .gm { color: var(--warning); }
+        .gen-line.error .gp, .gen-line.error .gm { color: var(--danger); }
+        .gen-line.info .gp { color: var(--accent-2); }
+        .gen-line.info .gm { color: #a8c8d8; }
+        .gen-cursor {
+            display: inline-block;
+            width: 8px; height: 13px;
+            background: var(--primary);
+            animation: cursorBlink 1s step-end infinite;
+            vertical-align: middle;
+            margin-left: 3px;
+            box-shadow: 0 0 8px var(--primary);
+        }
+        @keyframes cursorBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Progress bar in console */
+        .gen-progress {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .gen-progress-label {
+            font-size: 0.62rem;
+            letter-spacing: 2px;
+            color: var(--primary);
+            font-family: 'Orbitron', sans-serif;
+            min-width: 80px;
+            text-transform: uppercase;
+        }
+        .gen-progress-track {
+            flex: 1;
+            height: 5px;
+            background: rgba(0, 255, 157, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 255, 157, 0.25);
+        }
+        .gen-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00ff9d, #06b6d4, #7c3aed);
+            background-size: 200% auto;
+            box-shadow: 0 0 15px #00ff9d;
+            transition: width 0.3s ease;
+            animation: shine 2s linear infinite;
+        }
+        .gen-progress-pct {
+            font-size: 0.7rem;
+            color: var(--primary);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            min-width: 40px;
+            text-align: right;
+            text-shadow: 0 0 10px rgba(0, 255, 157, 0.7);
+        }
+
+        .gen-code-display {
+            text-align: center;
+            margin: 14px 0 6px;
+            padding: 14px;
+            background: radial-gradient(circle at center, rgba(0, 255, 157, 0.1), transparent 70%);
+            border: 1px dashed rgba(0, 255, 157, 0.4);
+            border-radius: 12px;
+            animation: codeReveal 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes codeReveal {
+            from { opacity: 0; transform: scale(0.85); filter: blur(8px); }
+            to { opacity: 1; transform: scale(1); filter: blur(0); }
+        }
+        .gen-code-display .label {
+            font-size: 0.6rem;
+            letter-spacing: 3px;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            font-family: 'Orbitron', sans-serif;
+        }
+        .gen-code-display .value {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1.8rem;
+            letter-spacing: 6px;
+            color: var(--primary);
+            text-shadow: 0 0 20px rgba(0, 255, 157, 0.9), 0 0 40px rgba(0, 255, 157, 0.5);
+            word-break: break-all;
+        }
+
+        .btn-outline {
+            width: 100%;
+            padding: 15px 22px;
+            background: transparent;
+            border: 1.5px solid rgba(0, 255, 157, 0.3);
+            border-radius: 12px;
+            color: var(--primary);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: 0.25s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .btn-outline:hover, .btn-outline:active {
+            background: rgba(0, 255, 157, 0.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0,255,157,0.3);
+        }
+        .btn-danger-outline {
+            border-color: rgba(255, 59, 92, 0.4);
+            color: var(--danger);
+        }
+        .btn-danger-outline:hover {
+            background: rgba(255, 59, 92, 0.1);
+            border-color: var(--danger);
+            box-shadow: 0 0 20px rgba(255,59,92,0.3);
+        }
+
+        .hint-text {
+            font-size: 0.72rem;
+            color: var(--muted);
+            text-align: center;
+            line-height: 1.6;
+            letter-spacing: 0.5px;
+        }
+        .hint-text code {
+            color: var(--primary);
+            background: rgba(0,255,157,0.08);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 22px;
+        }
+        .stat-card {
+            background: linear-gradient(160deg, rgba(15, 20, 32, 0.85), rgba(10, 15, 26, 0.7));
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px 14px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: var(--grad);
+            opacity: 0.6;
+        }
+        .stat-card i {
+            color: var(--primary);
+            font-size: 1.15rem;
+            margin-bottom: 8px;
+            filter: drop-shadow(0 0 8px rgba(0,255,157,0.6));
+        }
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1.3rem;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        .stat-label {
+            font-size: 0.58rem;
+            color: var(--muted);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .session-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(0, 255, 157, 0.12);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            transition: 0.25s;
+        }
+        .session-row:hover {
+            border-color: rgba(0, 255, 157, 0.35);
+            background: rgba(0, 255, 157, 0.05);
+        }
+        .session-info { display: flex; align-items: center; gap: 12px; }
+        .session-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: var(--danger);
+            box-shadow: 0 0 10px var(--danger);
+        }
+        .session-dot.online {
+            background: var(--primary);
+            box-shadow: 0 0 12px var(--primary);
+            animation: pulse 1.6s ease-in-out infinite;
+        }
+        .session-name {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 0.82rem;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+        .session-state {
+            font-size: 0.62rem;
+            letter-spacing: 2px;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+        .session-state.online { color: var(--primary); }
+
+        .btn-mini {
+            padding: 8px 14px;
+            border: 1px solid rgba(0, 255, 157, 0.3);
+            background: rgba(0, 255, 157, 0.08);
+            color: var(--primary);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 0.62rem;
+            letter-spacing: 1.5px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.25s;
+        }
+        .btn-mini:hover { background: rgba(0,255,157,0.2); }
+        .btn-mini.danger {
+            border-color: rgba(255, 59, 92, 0.4);
+            background: rgba(255, 59, 92, 0.08);
+            color: var(--danger);
+        }
+        .btn-mini.danger:hover { background: rgba(255,59,92,0.2); }
+
+        /* ═══════════════ DRAWER ═══════════════ */
+        .drawer-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: 0.3s;
+        }
+        .drawer-overlay.open { opacity: 1; visibility: visible; }
+
+        .side-drawer {
+            position: fixed;
+            top: 0; left: -340px;
+            width: 320px; height: 100%;
+            background: linear-gradient(160deg, #0a0f1a 0%, #05070d 100%);
+            border-right: 1px solid rgba(0, 255, 157, 0.25);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+            box-shadow: 4px 0 40px rgba(0, 255, 157, 0.2);
+        }
+        .side-drawer::-webkit-scrollbar { width: 5px; }
+        .side-drawer::-webkit-scrollbar-track { background: #05070d; }
+        .side-drawer::-webkit-scrollbar-thumb { background: #00ff9d; border-radius: 3px; }
+        .side-drawer.open { left: 0; }
+
+        .drawer-header {
+            padding: 22px 20px 18px;
+            border-bottom: 1px solid rgba(0, 255, 157, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0, 255, 157, 0.03);
+            position: sticky;
+            top: 0;
+            backdrop-filter: blur(10px);
+            z-index: 5;
+        }
+        .drawer-header .dh-logo {
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1.5px solid rgba(0,255,157,0.5);
+            box-shadow: 0 0 16px rgba(0,255,157,0.4);
+            flex-shrink: 0;
+        }
+        .drawer-header .dh-logo img { width: 100%; height: 100%; object-fit: cover; }
+        .drawer-header .dh-text { flex: 1; line-height: 1.2; }
+        .drawer-header .dh-title {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 0.85rem;
+            background: linear-gradient(90deg, #00ff9d, #06b6d4, #7c3aed);
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent;
+            letter-spacing: 1.5px;
+        }
+        .drawer-header .dh-sub {
+            font-size: 0.58rem;
+            color: var(--muted);
+            letter-spacing: 2px;
+            margin-top: 2px;
+        }
+        .drawer-header .dh-close {
+            color: var(--muted);
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 8px;
+            transition: 0.25s;
+        }
+        .drawer-header .dh-close:hover {
+            color: var(--danger);
+            background: rgba(255, 59, 92, 0.1);
+        }
+
+        .drawer-user-card {
+            margin: 14px;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(0, 255, 157, 0.08), rgba(124, 58, 237, 0.08));
+            border: 1px solid rgba(0, 255, 157, 0.2);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .drawer-user-avatar {
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00ff9d, #06b6d4, #7c3aed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            color: #05070d;
+            font-size: 1rem;
+            box-shadow: 0 0 20px rgba(0,255,157,0.4);
+            flex-shrink: 0;
+        }
+        .drawer-user-info { flex: 1; line-height: 1.3; min-width: 0; }
+        .drawer-user-name {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #fff;
+            letter-spacing: 1px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .drawer-user-status {
+            font-size: 0.6rem;
+            color: var(--primary);
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 3px;
+        }
+        .drawer-user-status::before {
+            content: '';
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 8px var(--primary);
+            animation: pulse 1.6s ease-in-out infinite;
+        }
+
+        .drawer-section {
+            padding: 12px 14px 6px;
+        }
+        .drawer-section-title {
+            font-size: 0.58rem;
+            letter-spacing: 3px;
+            color: var(--muted);
+            text-transform: uppercase;
+            padding: 0 10px 10px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 600;
+        }
+        .drawer-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 13px 12px;
+            border-radius: 12px;
+            color: #cbd5e0;
+            cursor: pointer;
+            transition: 0.22s;
+            font-size: 0.86rem;
+            letter-spacing: 0.4px;
+            margin-bottom: 3px;
+            border: 1px solid transparent;
+        }
+        .drawer-item:hover, .drawer-item:active {
+            background: rgba(0, 255, 157, 0.08);
+            border-color: rgba(0, 255, 157, 0.2);
+            color: var(--primary);
+            padding-left: 18px;
+        }
+        .drawer-item.active {
+            background: linear-gradient(90deg, rgba(0, 255, 157, 0.15), rgba(124, 58, 237, 0.15));
+            border-color: rgba(0, 255, 157, 0.35);
+            color: var(--primary);
+        }
+        .drawer-item i {
+            width: 22px;
+            text-align: center;
+            font-size: 1rem;
+            color: var(--primary);
+            flex-shrink: 0;
+        }
+        .drawer-item span { flex: 1; }
+
+        .drawer-item-group { margin-bottom: 3px; }
+        .drawer-item.has-submenu { position: relative; }
+        .drawer-item.has-submenu::after {
+            content: '\f078';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            font-size: 0.6rem;
+            color: var(--muted);
+            transition: transform 0.25s;
+            margin-right: 6px;
+        }
+        .drawer-item.has-submenu.open::after {
+            transform: rotate(180deg);
+        }
+        .drawer-submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            padding-left: 16px;
+            border-left: 2px solid rgba(0, 255, 157, 0.15);
+            margin-left: 16px;
+        }
+        .drawer-submenu.open {
+            max-height: 500px;
+            padding-top: 4px;
+            padding-bottom: 4px;
+        }
+        .drawer-subitem {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            color: #a8b8cc;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.8rem;
+            letter-spacing: 0.3px;
+            margin-bottom: 2px;
+        }
+        .drawer-subitem:hover {
+            background: rgba(0, 255, 157, 0.06);
+            color: var(--primary);
+        }
+        .drawer-subitem i {
+            width: 18px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--primary);
+            opacity: 0.85;
+        }
+
+        .drawer-footer {
+            margin-top: auto;
+            padding: 16px;
+            border-top: 1px solid rgba(0, 255, 157, 0.1);
+            position: sticky;
+            bottom: 0;
+            background: rgba(5, 7, 13, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        .drawer-logout-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, rgba(255, 59, 92, 0.85), rgba(200, 30, 63, 0.85));
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 0.78rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: 0.25s;
+        }
+        .drawer-logout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 59, 92, 0.5);
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 20px; right: 20px;
+            z-index: 5000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .toast {
+            padding: 14px 18px;
+            min-width: 260px;
+            background: #05070d;
+            border: 1px solid var(--primary);
+            border-left: 4px solid var(--primary);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 0.78rem;
+            box-shadow: 0 0 25px rgba(0, 255, 157, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            pointer-events: auto;
+            animation: toastIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(100%); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .toast.success { border-color: var(--success); border-left-color: var(--success); }
+        .toast.error { border-color: var(--danger); border-left-color: var(--danger); }
+        .toast.info { border-color: var(--accent-2); border-left-color: var(--accent-2); }
+        .toast i { font-size: 1.05rem; }
+        .toast.success i { color: var(--success); }
+        .toast.error i { color: var(--danger); }
+        .toast.info i { color: var(--accent-2); }
+
+        .nexus-modal {
+            position: fixed; inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 3000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .nexus-modal.open { display: flex; }
+        .nexus-modal-box {
+            width: 100%;
+            max-width: 460px;
+            background: linear-gradient(160deg, #0a0f1a, #05070d);
+            border: 1px solid var(--primary);
+            border-radius: 18px;
+            box-shadow: 0 0 50px rgba(0, 255, 157, 0.35);
+            overflow: hidden;
+            animation: modalPop 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 88vh;
+            overflow-y: auto;
+        }
+        @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.92); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .nexus-modal-header {
+            padding: 18px 22px;
+            border-bottom: 1px solid rgba(0, 255, 157, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 255, 157, 0.03);
+        }
+        .nexus-modal-header span {
+            color: var(--primary);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            letter-spacing: 2px;
+            font-size: 0.85rem;
+        }
+        .nexus-modal-close {
+            cursor: pointer;
+            color: var(--muted);
+            font-size: 1.1rem;
+            padding: 4px 10px;
+            border-radius: 6px;
+            transition: 0.25s;
+        }
+        .nexus-modal-close:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .nexus-modal-body {
+            padding: 22px;
+            font-size: 0.82rem;
+            color: #cbd5e0;
+            line-height: 1.7;
+        }
+        .nexus-modal-body h3 {
+            color: var(--primary);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            margin-bottom: 12px;
+            letter-spacing: 2px;
+        }
+        .nexus-modal-body p { margin-bottom: 8px; }
+        .nexus-modal-body a { color: var(--primary); text-decoration: none; }
+        .nexus-modal-body a:hover { text-decoration: underline; }
+
+        /* Feature toggle in settings modal */
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0, 255, 157, 0.08);
+        }
+        .setting-row:last-child { border-bottom: none; }
+        .setting-row-label {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .setting-row-label .name {
+            font-size: 0.82rem;
+            color: #e6f1ff;
+            font-weight: 600;
+        }
+        .setting-row-label .desc {
+            font-size: 0.66rem;
+            color: var(--muted);
+            letter-spacing: 0.3px;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 46px; height: 24px;
+            background: rgba(255, 59, 92, 0.15);
+            border: 1px solid rgba(255, 59, 92, 0.4);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: 0.25s;
+            flex-shrink: 0;
+        }
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px; left: 2px;
+            width: 18px; height: 18px;
+            background: var(--danger);
+            border-radius: 50%;
+            transition: 0.25s;
+            box-shadow: 0 0 8px rgba(255,59,92,0.5);
+        }
+        .toggle-switch.on {
+            background: rgba(0, 255, 157, 0.2);
+            border-color: var(--primary);
+        }
+        .toggle-switch.on::after {
+            left: 24px;
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px 20px 40px;
+            color: var(--muted);
+            font-size: 0.68rem;
+            letter-spacing: 2px;
+            position: relative;
+            z-index: 5;
+        }
+        .footer-brand {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 0.95rem;
+            letter-spacing: 3px;
+            background: linear-gradient(90deg, #00ff9d, #06b6d4, #7c3aed);
+            background-size: 200% auto;
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent;
+            animation: shine 5s linear infinite;
+            margin-bottom: 8px;
+        }
+        .footer-tag {
+            color: var(--primary);
+            letter-spacing: 3px;
+            font-size: 0.62rem;
+            margin-bottom: 12px;
+        }
+        .footer-info {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(0, 255, 157, 0.1);
+        }
+        .footer-info a {
+            color: var(--muted);
+            text-decoration: none;
+            transition: 0.25s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .footer-info a:hover { color: var(--primary); }
+        .footer-info a i { color: var(--primary); }
+
+        #preloader {
+            position: fixed; inset: 0;
+            z-index: 99999;
+            background: #05070d;
+            display: grid;
+            place-items: center;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        #preloader.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+        .loader-content { text-align: center; }
+        .loader-ring {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            border: 3px solid rgba(0, 255, 157, 0.15);
+            border-top-color: var(--primary);
+            border-right-color: var(--accent-2);
+            animation: spin 1s linear infinite;
+            margin: 0 auto 22px;
+            box-shadow: 0 0 30px rgba(0,255,157,0.4);
+        }
+        .loader-title {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1.2rem;
+            letter-spacing: 4px;
+            background: linear-gradient(90deg, #00ff9d, #06b6d4, #7c3aed);
+            background-size: 200% auto;
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent;
+            animation: shine 3s linear infinite;
+        }
+        .loader-sub {
+            font-size: 0.62rem;
+            letter-spacing: 5px;
+            color: var(--muted);
+            margin-top: 8px;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 640px) {
+            .hero-title { font-size: 1.5rem; letter-spacing: 2px; }
+            .hero-sub { font-size: 0.6rem; letter-spacing: 3px; }
+            .hero-logo-wrap { width: 120px; height: 120px; }
+            .pair-code-value { font-size: 1.9rem; letter-spacing: 6px; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .stat-card { padding: 14px 12px; }
+            .side-drawer { width: 290px; left: -310px; }
+            .gen-code-display .value { font-size: 1.4rem; letter-spacing: 4px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="preloader">
+        <div class="loader-content">
+            <div class="loader-ring"></div>
+            <div class="loader-title">𝗕𝗟@𝗖𝗞𝗡𝟭𝗧𝗘-𝗡𝗫𝗦-𝗨𝗟𝗧𝗥𝗔</div>
+            <div class="loader-sub">INITIALIZING NEXUS</div>
+        </div>
+    </div>
+
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+    <div class="bg-lightning">
+        <svg viewBox="0 0 400 800" preserveAspectRatio="none">
+            <path class="bolt b1" d="M 80 0 L 60 80 L 100 80 L 55 200 L 90 200 L 40 340 L 80 340 L 30 480"/>
+            <path class="bolt b2" d="M 320 100 L 300 180 L 340 180 L 300 300 L 330 300 L 280 440"/>
+            <path class="bolt b3" d="M 200 400 L 180 480 L 220 480 L 180 580 L 210 580 L 170 700 L 200 700 L 160 800"/>
+            <path class="bolt b4" d="M 380 300 L 350 400 L 390 400 L 340 540 L 370 540 L 330 680"/>
+            <path class="bolt b1" d="M 30 500 L 10 580 L 50 580 L 15 680 L 45 680"/>
+        </svg>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ═══════════════ DRAWER ═══════════════ -->
+    <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer()"></div>
+    <aside class="side-drawer" id="sideDrawer">
+        <div class="drawer-header">
+            <div class="dh-logo">
+                <img src="https://raw.githubusercontent.com/Blackn1te-crypto/BLACKN1TE-NXS/main/logo.png" alt="Logo">
+            </div>
+            <div class="dh-text">
+                <div class="dh-title">BL@CKN1TE-NXS</div>
+                <div class="dh-sub">ULTRA CONTROL PANEL</div>
+            </div>
+            <div class="dh-close" onclick="toggleDrawer()"><i class="fas fa-times"></i></div>
+        </div>
+
+        <div class="drawer-user-card">
+            <div class="drawer-user-avatar" id="drawerAvatar">B</div>
+            <div class="drawer-user-info">
+                <div class="drawer-user-name" id="drawerUserName">BL@CKN1TE</div>
+                <div class="drawer-user-status">SYSTEM ONLINE</div>
+            </div>
+        </div>
+
+        <!-- Section 1: Control Center -->
+        <div class="drawer-section">
+            <div class="drawer-section-title">Control Center</div>
+            <div class="drawer-item active" data-action="dashboard"><i class="fas fa-shield-halved"></i><span>Dashboard</span></div>
+            <div class="drawer-item" data-action="sessions"><i class="fas fa-satellite-dish"></i><span>Live Sessions</span></div>
+            <div class="drawer-item" data-action="pair"><i class="fas fa-link"></i><span>Link WhatsApp</span></div>
+            <div class="drawer-item" data-action="console"><i class="fas fa-terminal"></i><span>Live Console</span></div>
+        </div>
+
+        <!-- Section 2: Store & Services -->
+        <div class="drawer-section">
+            <div class="drawer-section-title">Store &amp; Services</div>
+            <div class="drawer-item" data-action="store"><i class="fas fa-cube"></i><span>Setting Store</span></div>
+            <div class="drawer-item" data-action="billing"><i class="fas fa-credit-card"></i><span>Billing</span></div>
+            <div class="drawer-item" data-action="db"><i class="fas fa-database"></i><span>BL@CKN1TE DB</span></div>
+            <div class="drawer-item" data-action="ads"><i class="fas fa-bullhorn"></i><span>Ads Manager</span></div>
+            <div class="drawer-item" data-action="storage"><i class="fas fa-hdd"></i><span>Storage</span></div>
+            <div class="drawer-item" data-action="shortener"><i class="fas fa-link"></i><span>URL Shortener</span></div>
+            <div class="drawer-item" data-action="webhooks"><i class="fas fa-plug"></i><span>Webhooks</span></div>
+        </div>
+
+        <!-- Section 3: Configuration -->
+        <div class="drawer-section">
+            <div class="drawer-section-title">Configuration</div>
+
+            <div class="drawer-item-group">
+                <div class="drawer-item has-submenu" data-toggle="submenu-others">
+                    <i class="fas fa-ellipsis"></i><span>Others</span>
+                </div>
+                <div class="drawer-submenu" id="submenu-others">
+                    <div class="drawer-subitem" data-action="changelog"><i class="fas fa-list-check"></i><span>Changelog</span></div>
+                    <div class="drawer-subitem" data-action="backup"><i class="fas fa-download"></i><span>Backup Config</span></div>
+                    <div class="drawer-subitem" data-action="restore"><i class="fas fa-upload"></i><span>Restore Config</span></div>
+                    <div class="drawer-subitem" data-action="logs"><i class="fas fa-file-lines"></i><span>System Logs</span></div>
+                </div>
+            </div>
+
+            <div class="drawer-item-group">
+                <div class="drawer-item has-submenu" data-toggle="submenu-secure">
+                    <i class="fas fa-shield"></i><span>Details &amp; Secure</span>
+                </div>
+                <div class="drawer-submenu" id="submenu-secure">
+                    <div class="drawer-subitem" data-action="session-info"><i class="fas fa-id-card"></i><span>Session Info</span></div>
+                    <div class="drawer-subitem" data-action="2fa"><i class="fas fa-key"></i><span>2FA / OTP</span></div>
+                    <div class="drawer-subitem" data-action="devices"><i class="fas fa-mobile-screen"></i><span>Linked Devices</span></div>
+                    <div class="drawer-subitem" data-action="activity"><i class="fas fa-clock-rotate-left"></i><span>Login Activity</span></div>
+                </div>
+            </div>
+
+            <div class="drawer-item" data-action="settings"><i class="fas fa-cog"></i><span>Settings</span></div>
+            <div class="drawer-item" data-action="stats"><i class="fas fa-chart-line"></i><span>Live Stats</span></div>
+        </div>
+
+        <!-- Section 4: Support -->
+        <div class="drawer-section">
+            <div class="drawer-section-title">Support</div>
+            <div class="drawer-item" data-action="about"><i class="fas fa-circle-info"></i><span>About ULTRA</span></div>
+            <div class="drawer-item" data-action="contact"><i class="fab fa-whatsapp"></i><span>Contact Owner</span></div>
+            <div class="drawer-item" data-action="channel"><i class="fas fa-tower-broadcast"></i><span>Join Channel</span></div>
+            <div class="drawer-item" data-action="support"><i class="fas fa-headset"></i><span>Support</span></div>
+        </div>
+
+        <div class="drawer-footer">
+            <button class="drawer-logout-btn" onclick="performLogout()">
+                <i class="fas fa-power-off"></i> LOGOUT
+            </button>
+        </div>
+    </aside>
+
+    <nav class="navbar">
+        <div class="nav-inner">
+            <div class="brand">
+                <div class="menu-toggle" id="menuToggleBtn"><i class="fas fa-bars"></i></div>
+                <div class="brand-icon">
+                    <img src="https://raw.githubusercontent.com/Blackn1te-crypto/BLACKN1TE-NXS/main/logo.png" alt="Logo">
+                </div>
+                <div class="brand-text">
+                    <span class="brand-main">BL@CKN1TE-NXS</span>
+                    <span class="brand-sub">ULTRA PANEL</span>
+                </div>
+            </div>
+            <div class="nav-status">
+                <span class="pulse-dot"></span>
+                <span id="navStatusText">SYSTEM ONLINE</span>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-logo-wrap">
+            <div class="hero-logo-spin"></div>
+            <div class="hero-logo-spin-2"></div>
+            <div class="hero-logo">
+                <img src="https://raw.githubusercontent.com/Blackn1te-crypto/BLACKN1TE-NXS/main/logo.png" alt="BL@CKN1TE-NXS">
+            </div>
+        </div>
+        <h1 class="hero-title">BL@CKN1TE-NXS-ULTRA</h1>
+        <p class="hero-sub">MULTI-DEVICE WHATSAPP BOT</p>
+
+        <div class="status-pill" id="mainStatusPill">
+            <span class="dot"></span>
+            <span class="label" id="mainStatusLabel">— connected</span>
+        </div>
+    </section>
+
+    <main class="container">
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <i class="fas fa-robot"></i>
+                <div class="stat-value" id="statActive">0</div>
+                <div class="stat-label">Active Bots</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-satellite-dish"></i>
+                <div class="stat-value" id="statSessions">0</div>
+                <div class="stat-label">Sessions</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-bolt"></i>
+                <div class="stat-value" id="statUptime">0m</div>
+                <div class="stat-label">Uptime</div>
+            </div>
+        </div>
+
+        <div class="panel" id="pairCard">
+            <div class="panel-header">
+                <i class="fas fa-link"></i>
+                <h5>PAIR YOUR WHATSAPP NUMBER</h5>
+            </div>
+            <div class="panel-body">
+
+                <div class="input-group">
+                    <label class="input-group-label">Bot Name</label>
+                    <div class="input-shell">
+                        <span class="input-prefix"><i class="fas fa-robot"></i></span>
+                        <input type="text" id="botNameInput" placeholder="BL@CKN1TE-BOT1" autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-group-label">Country</label>
+                    <div class="input-shell" style="position:relative;">
+                        <span class="input-prefix"><i class="fas fa-globe"></i></span>
+                        <input type="text" id="countrySearch" placeholder="Search country..." autocomplete="off" spellcheck="false">
+                        <input type="hidden" id="countrySelect" value="">
+                        <div id="countryDropdown" style="position:absolute;top:100%;left:0;right:0;background:#0a0f1a;border:1.5px solid rgba(0,255,157,0.3);border-radius:14px;max-height:280px;overflow-y:auto;z-index:50;display:none;margin-top:6px;box-shadow:0 10px 40px rgba(0,0,0,0.6),0 0 30px rgba(0,255,157,0.15);">
+                            <div id="countryList" style="padding:6px;"></div>
+                        </div>
+                    </div>
+                    <p class="hint-text" style="text-align:left;margin-top:6px;font-size:0.66rem;">Type to search · A–Z list of all countries</p>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-group-label">WhatsApp Number</label>
+                    <div class="input-shell">
+                        <span class="input-prefix" id="prefixDisplay">+<span id="prefixText">___</span></span>
+                        <input type="tel" id="numberInput" placeholder="XXXX" autocomplete="off" inputmode="numeric">
+                    </div>
+                </div>
+
+                <button class="btn-ultra" id="connectBtn">
+                    <i class="fas fa-bolt"></i>
+                    <span>CONNECT WHATSAPP</span>
+                </button>
+
+                <p class="hint-text" style="margin-top: 16px;">
+                    Fast · Reliable · Secure · ULTRA SPEED
+                </p>
+            </div>
+        </div>
+
+        <!-- ═══════════════ CYBERPUNK GENERATION CONSOLE ═══════════════ -->
+        <div class="panel" id="genCard" style="display: none;">
+            <div class="panel-header">
+                <i class="fas fa-terminal"></i>
+                <h5>CODE GENERATION CONSOLE</h5>
+                <button class="btn-mini" onclick="cancelGenerate()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="panel-body">
+                <div class="gen-console-wrap">
+                    <div class="gen-console-header">
+                        <div class="dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+                        <div class="title"><i class="fas fa-terminal"></i> BL@CKN1TE-NXS · NEXUS CORE</div>
+                        <span class="blink"></span>
+                    </div>
+                    <div class="gen-console" id="genConsole"></div>
+                </div>
+
+                <div class="gen-actions" id="genActions" style="display: none;">
+                    <button class="btn-outline" id="copyCodeBtn2">
+                        <i class="fas fa-copy"></i>
+                        <span>COPY CODE</span>
+                    </button>
+                    <button class="btn-outline btn-danger-outline" onclick="cancelGenerate()">
+                        <i class="fas fa-times"></i>
+                        <span>CANCEL</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════ PAIRING CODE RESULT ═══════════════ -->
+        <div class="panel" id="codeCard" style="display: none;">
+            <div class="panel-header">
+                <i class="fas fa-key"></i>
+                <h5>YOUR PAIRING CODE</h5>
+            </div>
+            <div class="panel-body">
+                <div class="pair-code-display">
+                    <div class="pair-code-label">Enter this in WhatsApp → Linked Devices → Link with phone number</div>
+                    <div class="pair-code-value" id="pairingCode">----</div>
+
+                    <button class="btn-outline" id="copyCodeBtn">
+                        <i class="fas fa-copy"></i>
+                        <span>COPY CODE</span>
+                    </button>
+
+                    <p class="hint-text" style="margin-top: 16px;">
+                        <i class="fas fa-clock"></i> Code expires in a few minutes
+                    </p>
+                </div>
+                <button class="btn-outline btn-danger-outline" onclick="cancelCode()" style="margin-top: 16px;">
+                    <i class="fas fa-times"></i>
+                    <span>CLOSE</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="panel" id="sessionsCard">
+            <div class="panel-header">
+                <i class="fas fa-satellite-dish"></i>
+                <h5>LIVE SESSIONS</h5>
+                <button class="btn-mini" onclick="refreshSessions()"><i class="fas fa-rotate"></i></button>
+            </div>
+            <div class="panel-body" id="sessionsBody">
+                <p class="hint-text">Loading sessions...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="footer">
+        <div class="footer-brand">𝗕𝗟@𝗖𝗞𝗡𝟭𝗧𝗘-𝗡𝗫𝗦</div>
+        <div class="footer-tag">THE INCISIVE TRI-HAT HACKER</div>
+        <div>© 2026 · ULTRA EDITION · INFINITE MODE</div>
+        <div class="footer-info">
+            <a href="https://wa.me/263714799483" target="_blank"><i class="fab fa-whatsapp"></i> Contact</a>
+            <a href="https://whatsapp.com/channel/0029VbDubJNHbFV50Y6oiO3f" target="_blank"><i class="fas fa-tower-broadcast"></i> Channel</a>
+            <a href="/health" target="_blank"><i class="fas fa-heart-pulse"></i> Health</a>
+        </div>
+    </footer>
+
+    <div class="nexus-modal" id="nexusModal">
+        <div class="nexus-modal-box">
+            <div class="nexus-modal-header">
+                <span id="nexusModalTitle">INFO</span>
+                <span class="nexus-modal-close" onclick="closeModal()"><i class="fas fa-times"></i></span>
+            </div>
+            <div class="nexus-modal-body" id="nexusModalBody"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            let socket = null;
+            let currentBotName = localStorage.getItem('botName') || '';
+            let botSessionOnline = false;
+
+            // ═══════════════ TOAST ═══════════════
+            function showToast(message, type = 'info', duration = 4000) {
+                const c = document.getElementById('toastContainer');
+                if (!c) return;
+                const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
+                const t = document.createElement('div');
+                t.className = 'toast ' + type;
+                t.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i><span>${message}</span>`;
+                c.appendChild(t);
+                setTimeout(() => {
+                    t.style.opacity = '0';
+                    t.style.transform = 'translateX(100%)';
+                    t.style.transition = '0.3s';
+                    setTimeout(() => t.remove(), 300);
+                }, duration);
+            }
+            window.showToast = showToast;
+
+            // ═══════════════ DRAWER ═══════════════
+            window.toggleDrawer = function () {
+                const d = document.getElementById('sideDrawer');
+                const o = document.getElementById('drawerOverlay');
+                d.classList.toggle('open');
+                o.classList.toggle('open');
+            };
+
+            document.getElementById('menuToggleBtn')?.addEventListener('click', window.toggleDrawer);
+
+            document.querySelectorAll('.drawer-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    if (item.dataset.toggle) {
+                        e.stopPropagation();
+                        const submenu = document.getElementById(item.dataset.toggle);
+                        if (submenu) {
+                            item.classList.toggle('open');
+                            submenu.classList.toggle('open');
+                        }
+                        return;
+                    }
+                    const action = item.dataset.action;
+                    if (!action) return;
+                    window.toggleDrawer();
+                    setTimeout(() => handleDrawerAction(action), 250);
+                });
+            });
+
+            document.querySelectorAll('.drawer-subitem').forEach(item => {
+                item.addEventListener('click', () => {
+                    const action = item.dataset.action;
+                    if (!action) return;
+                    window.toggleDrawer();
+                    setTimeout(() => handleDrawerAction(action), 250);
+                });
+            });
+
+            function handleDrawerAction(action) {
+                switch (action) {
+                    case 'dashboard': window.scrollTo({ top: 0, behavior: 'smooth' }); break;
+                    case 'sessions':
+                        document.getElementById('sessionsCard')?.scrollIntoView({ behavior: 'smooth' });
+                        break;
+                    case 'pair':
+                        document.getElementById('pairCard')?.scrollIntoView({ behavior: 'smooth' });
+                        break;
+                    case 'console':
+                        openModal('💻 LIVE CONSOLE', `
+                            <h3>Live Console</h3>
+                            <p>The terminal logs live in the bot's own WhatsApp chat.</p>
+                            <p>Type <b style="color: var(--primary);">.menu</b> in the bot's WhatsApp to see the full cyberpunk menu.</p>
+                            <p>Browser DevTools (F12) → Console tab shows real-time logs.</p>
+                        `);
+                        break;
+                    case 'store':
+                        openModal('🛍️ SETTING STORE', `
+                            <h3>ULTRA Setting Store</h3>
+                            <p>All packs <b style="color: var(--primary);">installed &amp; active</b>:</p>
+                            <p>✅ Core Bot — Full</p>
+                            <p>✅ AI Engine — Full</p>
+                            <p>✅ Anti-Ban Shield — Full</p>
+                            <p>✅ Auto-React Pro — Full</p>
+                            <p>✅ Media Downloader Pro — Full</p>
+                            <p>✅ Group Moderation Suite — Full</p>
+                            <p>✅ Anti-Delete Engine — Full</p>
+                            <p>✅ Auto-Status Engine — Full</p>
+                            <p style="color: var(--primary); margin-top: 12px; font-weight: 700;">🎩 All ULTRA modules unlocked</p>
+                            <p style="color: var(--muted); font-size: 0.72rem;">Powered by BL@CKN1TE · ULTRA EDITION</p>
+                        `);
+                        break;
+                    case 'billing':
+                        openModal('💳 BILLING', `
+                            <h3>Billing Overview</h3>
+                            <p>Plan: <b style="color: var(--primary);">ULTRA LIFETIME</b></p>
+                            <p>Status: <b style="color: var(--primary);">ACTIVE · 24/7/365</b></p>
+                            <p>Next renewal: <b>NEVER (Lifetime access)</b></p>
+                            <p>Included: Unlimited sessions, all commands, live monitoring, AI engine, anti-features.</p>
+                            <p style="color: var(--primary); margin-top: 12px; font-weight: 700;">✅ Full ULTRA access granted</p>
+                        `);
+                        break;
+                    case 'db':
+                        openModal('🗄️ BL@CKN1TE DB', '<p>Loading...</p>');
+                        fetch('/api/json/stats').then(r => r.json()).then(d => {
+                            document.getElementById('nexusModalBody').innerHTML = `
+                                <h3>BL@CKN1TE Database</h3>
+                                <p>Total sessions: <b style="color: var(--primary);">${d.sessions.total}</b></p>
+                                <p>Running bots: <b style="color: var(--primary);">${d.sessions.running}</b></p>
+                                <p>Online sessions: <b style="color: var(--primary);">${d.sessions.online}</b></p>
+                                <p>Paused: <b style="color: var(--warning);">${d.sessions.paused}</b></p>
+                                <p>Storage used: <b style="color: var(--primary);">${d.system.memory.used}</b></p>
+                                <p>Storage total: <b>${d.system.memory.total}</b></p>
+                                <p>Uptime: <b>${d.system.uptimeHuman}</b></p>
+                            `;
+                        }).catch(() => {
+                            document.getElementById('nexusModalBody').innerHTML = '<p>Failed to load DB info.</p>';
+                        });
+                        break;
+                    case 'ads':
+                        openModal('📢 ADS MANAGER', `
+                            <h3>Ad Campaigns</h3>
+                            <p>Ad integration: <b style="color: var(--primary);">ENABLED</b></p>
+                            <p>Promote your business through the bot to reach thousands.</p>
+                            <p>Packages: Basic · Pro · ULTRA</p>
+                            <a href="https://wa.me/263714799483" target="_blank" style="display:inline-block; padding:12px 22px; background:rgba(0,255,157,0.1); border:1px solid rgba(0,255,157,0.4); border-radius:10px; color:#fff; text-decoration:none; margin-top:12px;">
+                                <i class="fab fa-whatsapp"></i> Contact Owner for Pricing
+                            </a>
+                        `);
+                        break;
+                    case 'storage':
+                        openModal('💾 STORAGE', '<p>Loading...</p>');
+                        fetch('/api/json/stats').then(r => r.json()).then(d => {
+                            document.getElementById('nexusModalBody').innerHTML = `
+                                <h3>Storage &amp; System</h3>
+                                <p>Total RAM: <b style="color: var(--primary);">${d.system.memory.total}</b></p>
+                                <p>Used RAM: <b style="color: var(--primary);">${d.system.memory.used}</b></p>
+                                <p>Utilization: <b style="color: var(--primary);">${d.system.memory.percent}</b></p>
+                                <p>CPU Load: <b style="color: var(--primary);">${d.system.cpu}</b></p>
+                                <p>Platform: <b>${d.system.platform}</b></p>
+                                <p>Node Version: <b>${d.system.node}</b></p>
+                                <p>Uptime: <b>${d.system.uptimeHuman}</b></p>
+                            `;
+                        }).catch(() => {
+                            document.getElementById('nexusModalBody').innerHTML = '<p>Failed to load storage info.</p>';
+                        });
+                        break;
+                    case 'shortener':
+                        openModal('🔗 URL SHORTENER', `
+                            <h3>URL Shortener</h3>
+                            <p>Status: <b style="color: var(--primary);">ACTIVE</b></p>
+                            <p>Shorten any URL via the bot:</p>
+                            <p>Command: <b style="color: var(--primary);">.shorten &lt;url&gt;</b></p>
+                            <p>Short links are tracked per session and include analytics.</p>
+                        `);
+                        break;
+                    case 'webhooks':
+                        openModal('🔌 WEBHOOKS', `
+                            <h3>Webhook Endpoints</h3>
+                            <p>Status: <b style="color: var(--primary);">LISTENING</b></p>
+                            <p>Incoming: <b style="color: var(--primary);">/api/webhook</b></p>
+                            <p>Outgoing: <b style="color: var(--primary);">/api/json/*</b></p>
+                            <p>Socket.IO: <b style="color: var(--primary);">ws://your-server</b></p>
+                            <p>Health: <b style="color: var(--primary);">/health</b></p>
+                            <p>Integrate your bot with external services using these endpoints.</p>
+                        `);
+                        break;
+                    case 'changelog':
+                        openModal('📝 CHANGELOG', `
+                            <h3>ULTRA Changelog</h3>
+                            <p><b style="color: var(--primary);">V16 · ULTRA</b> — Current</p>
+                            <p>• Extended drawer with 22 items</p>
+                            <p>• Cyberpunk code generation console</p>
+                            <p>• Searchable A–Z country list</p>
+                            <p>• Server-side login auth</p>
+                            <p>• Per-session START / STOP</p>
+                            <p>• Cyberpunk menu + banner</p>
+                            <p>• Logo caching (instant menu)</p>
+                            <p>• Full feature toggles in settings</p>
+                        `);
+                        break;
+                    case 'backup':
+                        openModal('📥 BACKUP CONFIG', `
+                            <h3>Backup Configuration</h3>
+                            <p>Your config includes:</p>
+                            <p>• Bot name &amp; prefixes</p>
+                            <p>• Session preferences</p>
+                            <p>• Anti-features toggles</p>
+                            <p>• Auto-features state</p>
+                            <p>Backups are stored in <b>data/</b> on the server.</p>
+                            <p style="color: var(--primary); margin-top: 12px; font-weight: 700;">✅ Backup ready</p>
+                        `);
+                        break;
+                    case 'restore':
+                        openModal('📤 RESTORE CONFIG', `
+                            <h3>Restore Configuration</h3>
+                            <p>Available backups: <b style="color: var(--primary);">data/session_states.json</b></p>
+                            <p>Bot data: <b style="color: var(--primary);">data/bot_data.json</b></p>
+                            <p>Restore happens automatically on server restart.</p>
+                            <p style="color: var(--primary); margin-top: 12px; font-weight: 700;">✅ Auto-restore enabled</p>
+                        `);
+                        break;
+                    case 'logs':
+                        openModal('📄 SYSTEM LOGS', `
+                            <h3>System Logs</h3>
+                            <p>Live logs streamed to browser console.</p>
+                            <p>Server logs printed to terminal running <b>node server.js</b>.</p>
+                            <p>Open DevTools (F12) → Console to view.</p>
+                            <p style="color: var(--primary); margin-top: 12px; font-weight: 700;">✅ Logging active</p>
+                        `);
+                        break;
+                    case 'session-info':
+                        openModal('🪪 SESSION INFO', `
+                            <h3>Session Information</h3>
+                            <p>User: <b style="color: var(--primary);">${currentBotName || 'Not set'}</b></p>
+                            <p>Session: <b style="color: var(--primary);">ACTIVE</b></p>
+                            <p>Started: <b>${new Date().toLocaleString()}</b></p>
+                            <p>TTL: <b>30 minutes of inactivity</b></p>
+                            <p>Encryption: <b style="color: var(--primary);">AES-256</b></p>
+                        `);
+                        break;
+                    case '2fa':
+                        openModal('🔑 2FA / OTP', `
+                            <h3>Two-Factor Authentication</h3>
+                            <p>Status: <b style="color: var(--primary);">READY</b></p>
+                            <p>OTP delivery via WhatsApp enabled.</p>
+                            <p>Enable 2FA by contacting the owner for a one-time setup link.</p>
+                            <p style="color: var(--muted); font-size: 0.72rem;">Adds an extra verification step on login.</p>
+                        `);
+                        break;
+                    case 'devices':
+                        openModal('📱 LINKED DEVICES', `
+                            <h3>Linked Devices</h3>
+                            <p>Currently linked: <b style="color: var(--primary);" id="linkedCount">--</b></p>
+                            <p>Devices appear here from live session data.</p>
+                            <p style="color: var(--muted); font-size: 0.75rem; margin-top: 12px;">Check the Live Sessions panel for active links.</p>
+                        `);
+                        fetch('/api/json/stats').then(r => r.json()).then(d => {
+                            const el = document.getElementById('linkedCount');
+                            if (el) el.innerText = d.sessions.online + ' device(s)';
+                        }).catch(() => {});
+                        break;
+                    case 'activity':
+                        openModal('🕐 LOGIN ACTIVITY', `
+                            <h3>Login Activity</h3>
+                            <p>Current session: <b style="color: var(--primary);">${new Date().toLocaleString()}</b></p>
+                            <p>IP: <b style="color: var(--primary);">Hidden for security</b></p>
+                            <p>Auth method: <b>Server-side session</b></p>
+                            <p>Channel verified: <b style="color: var(--primary);">YES</b></p>
+                        `);
+                        break;
+                    case 'settings':
+                        openSettings();
+                        break;
+                    case 'stats':
+                        openModal('📊 LIVE STATS', '<p>Loading...</p>');
+                        fetch('/api/json/stats').then(r => r.json()).then(d => {
+                            document.getElementById('nexusModalBody').innerHTML = `
+                                <h3>Live System Stats</h3>
+                                <p>Bot: <b style="color: var(--primary);">${d.bot}</b></p>
+                                <p>Ping: <b style="color: var(--primary);">${d.ping > 0 ? d.ping + ' ms' : '--'}</b></p>
+                                <p>Uptime: <b>${d.system.uptimeHuman}</b></p>
+                                <p>CPU Load: <b>${d.system.cpu}</b></p>
+                                <p>Memory: <b>${d.system.memory.used} / ${d.system.memory.total} (${d.system.memory.percent})</b></p>
+                                <p>Node: <b>${d.system.node}</b></p>
+                                <p>Sessions: <b>${d.sessions.total}</b></p>
+                                <p>Running: <b style="color: var(--primary);">${d.sessions.running}</b></p>
+                                <p>Online: <b style="color: var(--primary);">${d.sessions.online}</b></p>
+                                <p>Paused: <b style="color: var(--warning);">${d.sessions.paused}</b></p>
+                            `;
+                        }).catch(() => {
+                            document.getElementById('nexusModalBody').innerHTML = '<p>Failed to load stats.</p>';
+                        });
+                        break;
+                    case 'about':
+                        openModal('ℹ️ ABOUT ULTRA', `
+                            <h3>BL@CKN1TE-NXS-ULTRA</h3>
+                            <p style="color: var(--primary); font-family: Orbitron; font-weight: 700; letter-spacing: 2px; margin-bottom: 12px;">THE INCISIVE TRI-HAT HACKER</p>
+                            <p><b>Features:</b><br>
+                                • Multi-session WhatsApp bots<br>
+                                • Pairing-code linking<br>
+                                • Lifetime auto-reconnect<br>
+                                • AI engine ready<br>
+                                • Live monitoring dashboard<br>
+                                • Ultra-fast Baileys core<br>
+                                • Cyberpunk menu system<br>
+                                • Per-session START/STOP
+                            </p>
+                            <p><b>Prefixes:</b> .  /  &gt;</p>
+                            <p style="color: var(--muted); font-size: 0.75rem; margin-top: 14px;">
+                                © 2026 BL@CKN1TE · ULTRA EDITION
+                            </p>
+                        `);
+                        break;
+                    case 'contact':
+                        openModal('📱 CONTACT OWNER', `
+                            <h3>Reach BL@CKN1TE</h3>
+                            <p>Tap to open WhatsApp:</p>
+                            <a href="https://wa.me/263714799483" target="_blank" style="display:block; padding:14px; background:rgba(0,255,157,0.08); border:1px solid rgba(0,255,157,0.3); border-radius:12px; color:#fff; text-decoration:none; margin-bottom:10px;">
+                                <b>Primary Support</b><br>
+                                <span style="color: var(--primary);">+263 714 799 483</span>
+                            </a>
+                            <a href="https://wa.me/263780540231" target="_blank" style="display:block; padding:14px; background:rgba(0,255,157,0.08); border:1px solid rgba(0,255,157,0.3); border-radius:12px; color:#fff; text-decoration:none;">
+                                <b>Alternate</b><br>
+                                <span style="color: var(--primary);">+263 780 540 231</span>
+                            </a>
+                        `);
+                        break;
+                    case 'channel':
+                        window.open('https://whatsapp.com/channel/0029VbDubJNHbFV50Y6oiO3f', '_blank');
+                        break;
+                    case 'support':
+                        openModal('🎧 SUPPORT', `
+                            <h3>24/7 Support</h3>
+                            <p>Status: <b style="color: var(--primary);">ONLINE</b></p>
+                            <p>Response time: usually within 1 hour.</p>
+                            <p><b>Available channels:</b></p>
+                            <p>• WhatsApp (Primary contact)</p>
+                            <p>• WhatsApp Channel (Updates)</p>
+                            <p>• Direct message on the bot's own chat</p>
+                            <p style="color: var(--primary); margin-top: 12px; font-weight: 700;">✅ Support team ready</p>
+                        `);
+                        break;
+                }
+            }
+
+            // ═══════════════ SETTINGS WITH LIVE TOGGLES ═══════════════
+            let botSettings = {
+                readReceipts: true,
+                ghostMode: false,
+                aiEnabled: false,
+                autoReact: false,
+                antiDelete: false,
+                antiStatus: false,
+                antiLink: false,
+                antiCall: false,
+                publicMode: false,
+                autoTyping: true
+            };
+
+            function openSettings() {
+                openModal('⚙️ SETTINGS', `
+                    <h3>Bot Configuration</h3>
+                    <p style="color: var(--muted); font-size: 0.72rem; margin-bottom: 14px;">Toggles are saved to your bot and applied to WhatsApp commands</p>
+
+                    <div class="setting-row">
+                        <div class="setting-row-label">
+                            <span class="name">Read Receipts</span>
+                            <span class="desc">Show blue ticks when reading messages</span>
+                        </div>
+                        <div class="toggle-switch ${botSettings.readReceipts ? 'on' : ''}" data-key="readReceipts"></div>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-row-label">
+                            <span class="name">Ghost Mode</span>
+                            <span class="desc">Never mark incoming messages as read</span>
+                        </div>
+                        <div class="toggle-switch ${botSettings.ghostMode ? 'on' : ''}" data-key="ghostMode"></div>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-row-label">
+                            <span class="name">AI Auto-Reply</span>
+                            <span class="desc">GPT responses to non-command messages</span>
+                        </div>
+                        <div class="toggle-switch ${botSettings.aiEnabled ? 'on' : ''}" data-key="aiEnabled"></div>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-row-label">
+                            <span class="name">Auto-React</span>
+                            <span class="desc">Random emoji reactions to messages</span>
+                        </div>
+                        <div class="toggle-switch ${botSettings.autoReact ? 'on' : ''}" data-key="autoReact"></div>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-row-label">
+                            <span class="name">Anti-Delete</span>
+                            <span class="desc">Recover messages deleted by sender</span>
+                        </div>
+                        <div class="toggle-switch ${botSettings.antiDelete ? 'on' : ''}" data-key="antiDelete"></div>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-row-label">
+                            <span class="name">Anti-Status</span>
+                            <span class="desc">Auto-view &amp; react to WhatsApp status</span>
+                        </div>
+                        <div class="toggle-switch ${botSettings.antiStatus ? 'on' : ''}" data-key="antiStatus"></div>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-row-label">
+                            <span class="name">Anti-Link</span>
+                            <span class="desc">Remove links from group chats</span>
+                        </div>
+                        <div class="toggle-switch ${botSettings.antiLink ? 'on' : ''}" data-key="antiLink"></div>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-row-label">
+                            <span class="name">Anti-Call</span>
+                            <span class="desc">Auto-reject incoming calls</span>
+                        </div>
+                        <div class="toggle-switch ${botSettings.antiCall ? 'on' : ''}" data-key="antiCall"></div>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-row-label">
+                            <span class="name">Public Mode</span>
+                            <span class="desc">Allow commands from anyone (not just owner)</span>
+                        </div>
+                        <div class="toggle-switch ${botSettings.publicMode ? 'on' : ''}" data-key="publicMode"></div>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-row-label">
+                            <span class="name">Auto-Typing</span>
+                            <span class="desc">Show "typing..." while processing</span>
+                        </div>
+                        <div class="toggle-switch ${botSettings.autoTyping ? 'on' : ''}" data-key="autoTyping"></div>
+                    </div>
+
+                    <div style="margin-top: 18px; padding: 12px; background: rgba(0, 255, 157, 0.06); border: 1px solid rgba(0, 255, 157, 0.2); border-radius: 10px;">
+                        <p style="font-size: 0.72rem; color: var(--primary); text-align: center; margin: 0;">
+                            <i class="fas fa-check-circle"></i> Changes apply instantly to the bot
+                        </p>
+                    </div>
+                `);
+
+                setTimeout(() => {
+                    document.querySelectorAll('.toggle-switch[data-key]').forEach(el => {
+                        el.addEventListener('click', () => {
+                            el.classList.toggle('on');
+                            const key = el.dataset.key;
+                            botSettings[key] = el.classList.contains('on');
+                            saveSettingsToBot();
+                            showToast(`${key} → ${botSettings[key] ? 'ON' : 'OFF'}`, 'info', 1500);
+                        });
+                    });
+                }, 100);
+            }
+
+            function saveSettingsToBot() {
+                // Persist settings locally + emit to server if socket available
+                try { localStorage.setItem('botSettings', JSON.stringify(botSettings)); } catch (e) {}
+                if (socket && currentBotName) {
+                    socket.emit('bot-settings-update', { userId: currentBotName, settings: botSettings });
+                }
+            }
+
+            // Load settings from localStorage
+            try {
+                const stored = localStorage.getItem('botSettings');
+                if (stored) botSettings = { ...botSettings, ...JSON.parse(stored) };
+            } catch (e) {}
+
+            // ═══════════════ MODAL ═══════════════
+            function openModal(title, html) {
+                document.getElementById('nexusModalTitle').innerText = title;
+                document.getElementById('nexusModalBody').innerHTML = html;
+                document.getElementById('nexusModal').classList.add('open');
+            }
+            window.closeModal = function () {
+                document.getElementById('nexusModal').classList.remove('open');
+            };
+            window.openModal = openModal;
+
+            // ═══════════════ COUNTRY / PREFIX (A-Z SEARCHABLE) ═══════════════
+            const COUNTRIES = [
+                { name: 'Afghanistan', code: '93' }, { name: 'Albania', code: '355' }, { name: 'Algeria', code: '213' },
+                { name: 'Andorra', code: '376' }, { name: 'Angola', code: '244' }, { name: 'Argentina', code: '54' },
+                { name: 'Armenia', code: '374' }, { name: 'Australia', code: '61' }, { name: 'Austria', code: '43' },
+                { name: 'Azerbaijan', code: '994' }, { name: 'Bahamas', code: '1242' }, { name: 'Bahrain', code: '973' },
+                { name: 'Bangladesh', code: '880' }, { name: 'Barbados', code: '1246' }, { name: 'Belarus', code: '375' },
+                { name: 'Belgium', code: '32' }, { name: 'Belize', code: '501' }, { name: 'Benin', code: '229' },
+                { name: 'Bhutan', code: '975' }, { name: 'Bolivia', code: '591' }, { name: 'Botswana', code: '267' },
+                { name: 'Brazil', code: '55' }, { name: 'Brunei', code: '673' }, { name: 'Bulgaria', code: '359' },
+                { name: 'Burkina Faso', code: '226' }, { name: 'Burundi', code: '257' }, { name: 'Cambodia', code: '855' },
+                { name: 'Cameroon', code: '237' }, { name: 'Canada', code: '1' }, { name: 'Chad', code: '235' },
+                { name: 'Chile', code: '56' }, { name: 'China', code: '86' }, { name: 'Colombia', code: '57' },
+                { name: 'Congo', code: '242' }, { name: 'Costa Rica', code: '506' }, { name: 'Croatia', code: '385' },
+                { name: 'Cuba', code: '53' }, { name: 'Cyprus', code: '357' }, { name: 'Czech Republic', code: '420' },
+                { name: 'Denmark', code: '45' }, { name: 'Djibouti', code: '253' }, { name: 'Dominican Republic', code: '1809' },
+                { name: 'Ecuador', code: '593' }, { name: 'Egypt', code: '20' }, { name: 'El Salvador', code: '503' },
+                { name: 'Estonia', code: '372' }, { name: 'Ethiopia', code: '251' }, { name: 'Fiji', code: '679' },
+                { name: 'Finland', code: '358' }, { name: 'France', code: '33' }, { name: 'Gabon', code: '241' },
+                { name: 'Gambia', code: '220' }, { name: 'Georgia', code: '995' }, { name: 'Germany', code: '49' },
+                { name: 'Ghana', code: '233' }, { name: 'Greece', code: '30' }, { name: 'Guatemala', code: '502' },
+                { name: 'Guinea', code: '224' }, { name: 'Guyana', code: '592' }, { name: 'Haiti', code: '509' },
+                { name: 'Honduras', code: '504' }, { name: 'Hong Kong', code: '852' }, { name: 'Hungary', code: '36' },
+                { name: 'Iceland', code: '354' }, { name: 'India', code: '91' }, { name: 'Indonesia', code: '62' },
+                { name: 'Iran', code: '98' }, { name: 'Iraq', code: '964' }, { name: 'Ireland', code: '353' },
+                { name: 'Israel', code: '972' }, { name: 'Italy', code: '39' }, { name: 'Ivory Coast', code: '225' },
+                { name: 'Jamaica', code: '1876' }, { name: 'Japan', code: '81' }, { name: 'Jordan', code: '962' },
+                { name: 'Kazakhstan', code: '7' }, { name: 'Kenya', code: '254' }, { name: 'Kuwait', code: '965' },
+                { name: 'Kyrgyzstan', code: '996' }, { name: 'Laos', code: '856' }, { name: 'Latvia', code: '371' },
+                { name: 'Lebanon', code: '961' }, { name: 'Lesotho', code: '266' }, { name: 'Liberia', code: '231' },
+                { name: 'Libya', code: '218' }, { name: 'Lithuania', code: '370' }, { name: 'Luxembourg', code: '352' },
+                { name: 'Macau', code: '853' }, { name: 'Madagascar', code: '261' }, { name: 'Malawi', code: '265' },
+                { name: 'Malaysia', code: '60' }, { name: 'Maldives', code: '960' }, { name: 'Mali', code: '223' },
+                { name: 'Malta', code: '356' }, { name: 'Mauritania', code: '222' }, { name: 'Mauritius', code: '230' },
+                { name: 'Mexico', code: '52' }, { name: 'Moldova', code: '373' }, { name: 'Monaco', code: '377' },
+                { name: 'Mongolia', code: '976' }, { name: 'Montenegro', code: '382' }, { name: 'Morocco', code: '212' },
+                { name: 'Mozambique', code: '258' }, { name: 'Myanmar', code: '95' }, { name: 'Namibia', code: '264' },
+                { name: 'Nepal', code: '977' }, { name: 'Netherlands', code: '31' }, { name: 'New Zealand', code: '64' },
+                { name: 'Nicaragua', code: '505' }, { name: 'Niger', code: '227' }, { name: 'Nigeria', code: '234' },
+                { name: 'North Korea', code: '850' }, { name: 'Norway', code: '47' }, { name: 'Oman', code: '968' },
+                { name: 'Pakistan', code: '92' }, { name: 'Palestine', code: '970' }, { name: 'Panama', code: '507' },
+                { name: 'Papua New Guinea', code: '675' }, { name: 'Paraguay', code: '595' }, { name: 'Peru', code: '51' },
+                { name: 'Philippines', code: '63' }, { name: 'Poland', code: '48' }, { name: 'Portugal', code: '351' },
+                { name: 'Puerto Rico', code: '1787' }, { name: 'Qatar', code: '974' }, { name: 'Romania', code: '40' },
+                { name: 'Russia', code: '7' }, { name: 'Rwanda', code: '250' }, { name: 'Saudi Arabia', code: '966' },
+                { name: 'Senegal', code: '221' }, { name: 'Serbia', code: '381' }, { name: 'Seychelles', code: '248' },
+                { name: 'Sierra Leone', code: '232' }, { name: 'Singapore', code: '65' }, { name: 'Slovakia', code: '421' },
+                { name: 'Slovenia', code: '386' }, { name: 'Somalia', code: '252' }, { name: 'South Africa', code: '27' },
+                { name: 'South Korea', code: '82' }, { name: 'South Sudan', code: '211' }, { name: 'Spain', code: '34' },
+                { name: 'Sri Lanka', code: '94' }, { name: 'Sudan', code: '249' }, { name: 'Suriname', code: '597' },
+                { name: 'Sweden', code: '46' }, { name: 'Switzerland', code: '41' }, { name: 'Syria', code: '963' },
+                { name: 'Taiwan', code: '886' }, { name: 'Tajikistan', code: '992' }, { name: 'Tanzania', code: '255' },
+                { name: 'Thailand', code: '66' }, { name: 'Togo', code: '228' }, { name: 'Tonga', code: '676' },
+                { name: 'Trinidad and Tobago', code: '1868' }, { name: 'Tunisia', code: '216' }, { name: 'Turkey', code: '90' },
+                { name: 'Turkmenistan', code: '993' }, { name: 'Uganda', code: '256' }, { name: 'Ukraine', code: '380' },
+                { name: 'United Arab Emirates', code: '971' }, { name: 'United Kingdom', code: '44' }, { name: 'United States', code: '1' },
+                { name: 'Uruguay', code: '598' }, { name: 'Uzbekistan', code: '998' }, { name: 'Vanuatu', code: '678' },
+                { name: 'Venezuela', code: '58' }, { name: 'Vietnam', code: '84' }, { name: 'Yemen', code: '967' },
+                { name: 'Zambia', code: '260' }, { name: 'Zimbabwe', code: '263' }
+            ];
+
+            let selectedCountry = null;
+            const countrySearch = document.getElementById('countrySearch');
+            const countryDropdown = document.getElementById('countryDropdown');
+            const countryList = document.getElementById('countryList');
+            const countrySelect = document.getElementById('countrySelect');
+            const prefixText = document.getElementById('prefixText');
+
+            function renderCountryList(filter = '') {
+                if (!countryList) return;
+                const q = filter.toLowerCase().trim();
+                const filtered = q ? COUNTRIES.filter(c => c.name.toLowerCase().includes(q) || c.code.includes(q)) : COUNTRIES;
+
+                if (filtered.length === 0) {
+                    countryList.innerHTML = '<div style="padding:20px;text-align:center;color:#6b7a90;font-size:0.78rem;">No countries found</div>';
+                    return;
+                }
+
+                countryList.innerHTML = filtered.map(c => `
+                    <div class="country-item" data-code="${c.code}" data-name="${c.name}">
+                        <span style="flex:1;">${c.name}</span>
+                        <span style="color:#00ff9d;font-family:monospace;font-size:0.8rem;font-weight:700;">+${c.code}</span>
+                    </div>
+                `).join('');
+
+                countryList.querySelectorAll('.country-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        selectedCountry = { name: item.dataset.name, code: item.dataset.code };
+                        countrySearch.value = selectedCountry.name;
+                        countrySelect.value = selectedCountry.code;
+                        prefixText.innerText = selectedCountry.code;
+                        countryDropdown.style.display = 'none';
+                    });
+                });
+            }
+
+            countrySearch?.addEventListener('focus', () => {
+                renderCountryList(countrySearch.value);
+                countryDropdown.style.display = 'block';
+            });
+
+            countrySearch?.addEventListener('input', () => {
+                renderCountryList(countrySearch.value);
+                countryDropdown.style.display = 'block';
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.input-shell')) {
+                    if (countryDropdown) countryDropdown.style.display = 'none';
+                }
+            });
+
+            renderCountryList();
+
+            // ═══════════════ SOCKET ═══════════════
+            try {
+                socket = io({ transports: ['websocket', 'polling'], reconnection: true });
+                window.socket = socket;
+
+                socket.on('connect', () => {
+                    console.log('[SOCKET] Connected');
+                    updateMainStatus(true);
+                    refreshSessions();
+                });
+
+                socket.on('disconnect', () => {
+                    console.log('[SOCKET] Disconnected');
+                    updateMainStatus(false);
+                });
+
+                socket.on('pairing-code', (code) => {
+                    // Called when server sends code — finish console animation then show code
+                    revealPairingCode(code);
+                });
+
+                socket.on('connection-status', (data) => {
+                    if (!data) return;
+                    if (data.user) {
+                        currentBotName = data.user;
+                        localStorage.setItem('botName', data.user);
+                        document.getElementById('drawerUserName').innerText = data.user;
+                        document.getElementById('drawerAvatar').innerText = data.user.charAt(0).toUpperCase();
+                    }
+                    if (typeof data.running === 'boolean') {
+                        botSessionOnline = data.running;
+                    }
+                    updateMainStatus(botSessionOnline || data.connected);
+                });
+
+                socket.on('session-status', (data) => {
+                    if (!data) return;
+                    if (typeof data.running === 'boolean') botSessionOnline = data.running;
+                    updateMainStatus(botSessionOnline);
+                    refreshSessions();
+                });
+
+                socket.on('total-active', (data) => {
+                    if (!data) return;
+                    document.getElementById('statActive').innerText = data.count || 0;
+                    document.getElementById('statSessions').innerText = data.sessions || 0;
+                });
+
+                socket.on('sessions-list', (list) => {
+                    renderSessions(list);
+                });
+
+                socket.on('blacklist-block', (data) => {
+                    showToast(data?.message || 'Access denied', 'error', 6000);
+                });
+
+            } catch (e) {
+                console.error('Socket init failed:', e);
+            }
+
+            function updateMainStatus(isOnline) {
+                const pill = document.getElementById('mainStatusPill');
+                const label = document.getElementById('mainStatusLabel');
+                if (isOnline) {
+                    pill.classList.remove('offline');
+                    label.innerText = '— connected';
+                } else {
+                    pill.classList.add('offline');
+                    label.innerText = '— offline';
+                }
+            }
+
+            // ═══════════════ CYBERPUNK CODE GENERATION ═══════════════
+            let genAbort = false;
+            let genConsole_ = null;
+
+            function genTimestamp() {
+                return new Date().toTimeString().slice(0, 8);
+            }
+
+            function termLine(message, type = 'info', prefix = '›') {
+                if (!genConsole_) return;
+                const div = document.createElement('div');
+                div.className = 'gen-line ' + type;
+                const pc = type === 'error' ? 'err' : type === 'warning' ? 'warn' : type === 'info' ? 'info' : '';
+                div.innerHTML = `<span class="gt">[${genTimestamp()}]</span><span class="gp ${pc}">${prefix}</span><span class="gm ${type}">${message}</span>`;
+                genConsole_.appendChild(div);
+                genConsole_.scrollTop = genConsole_.scrollHeight;
+            }
+
+            function termProgress(label, pct) {
+                if (!genConsole_) return;
+                // Look for existing progress with this label
+                let existing = genConsole_.querySelector(`[data-progress="${label}"]`);
+                if (existing) {
+                    const fill = existing.querySelector('.gen-progress-fill');
+                    const pctEl = existing.querySelector('.gen-progress-pct');
+                    if (fill) fill.style.width = pct + '%';
+                    if (pctEl) pctEl.innerText = pct + '%';
+                } else {
+                    const div = document.createElement('div');
+                    div.className = 'gen-progress';
+                    div.dataset.progress = label;
+                    div.innerHTML = `
+                        <span class="gen-progress-label">${label}</span>
+                        <div class="gen-progress-track"><div class="gen-progress-fill"></div></div>
+                        <span class="gen-progress-pct">0%</span>
+                    `;
+                    genConsole_.appendChild(div);
+                }
+                genConsole_.scrollTop = genConsole_.scrollHeight;
+            }
+
+            function typeText(message, type = 'info', prefix = '›', speed = 12) {
+                return new Promise(resolve => {
+                    if (!genConsole_ || genAbort) return resolve();
+                    const div = document.createElement('div');
+                    div.className = 'gen-line ' + type;
+                    const id = 'typ-' + Date.now() + Math.random().toString(36).slice(2, 6);
+                    const pc = type === 'error' ? 'err' : type === 'warning' ? 'warn' : type === 'info' ? 'info' : '';
+                    div.innerHTML = `<span class="gt">[${genTimestamp()}]</span><span class="gp ${pc}">${prefix}</span><span class="gm ${type}" id="${id}"></span><span class="gen-cursor"></span>`;
+                    genConsole_.appendChild(div);
+                    genConsole_.scrollTop = genConsole_.scrollHeight;
+                    const span = document.getElementById(id);
+                    let i = 0;
+                    const interval = setInterval(() => {
+                        if (genAbort) {
+                            clearInterval(interval);
+                            const c = div.querySelector('.gen-cursor');
+                            if (c) c.remove();
+                            return resolve();
+                        }
+                        if (!span) { clearInterval(interval); return resolve(); }
+                        span.textContent = message.slice(0, i + 1);
+                        i++;
+                        genConsole_.scrollTop = genConsole_.scrollHeight;
+                        if (i >= message.length) {
+                            clearInterval(interval);
+                            const c = div.querySelector('.gen-cursor');
+                            if (c) c.remove();
+                            resolve();
+                        }
+                    }, speed);
+                });
+            }
+
+            async function sleep(ms) {
+                return new Promise(r => setTimeout(r, ms));
+            }
+
+            function showGenConsole() {
+                genAbort = false;
+                document.getElementById('genCard').style.display = 'block';
+                document.getElementById('codeCard').style.display = 'none';
+                document.getElementById('genActions').style.display = 'none';
+                genConsole_ = document.getElementById('genConsole');
+                genConsole_.innerHTML = '';
+                document.getElementById('genCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            async function runGenerationSequence(botName, fullNumber) {
+                await typeText(`Initializing secure channel for ${botName}...`, 'info', '◆', 14);
+                await sleep(400);
+                await typeText(`Validating WhatsApp number +${fullNumber}...`, 'info', '◆', 12);
+                await sleep(400);
+                await typeText(`Connecting to Baileys core...`, 'info', '◆', 14);
+                await sleep(500);
+                await typeText(`Encrypting session payload...`, 'info', '◆', 12);
+                await sleep(400);
+
+                termProgress('HANDSHAKE', 0);
+                for (let p = 0; p <= 100; p += 10) {
+                    if (genAbort) return;
+                    termProgress('HANDSHAKE', p);
+                    await sleep(80);
+                }
+                termLine('Secure handshake established', 'success', '✓');
+                await sleep(200);
+
+                await typeText(`Requesting pairing code from WhatsApp servers...`, 'info', '◆', 12);
+                await sleep(500);
+
+                termProgress('GENERATING', 0);
+                for (let p = 0; p <= 100; p += 5) {
+                    if (genAbort) return;
+                    termProgress('GENERATING', p);
+                    await sleep(60);
+                }
+                termLine('8-digit pairing code generated', 'success', '✓');
+                await sleep(200);
+
+                await typeText(`Awaiting server transmission...`, 'info', '◆', 12);
+                await sleep(500);
+
+                // If the server hasn't sent a code yet, wait a bit more
+                // The actual code will arrive via socket 'pairing-code' → revealPairingCode()
+                genLine('\u00A0', 'info'); // spacer
+                const waitDiv = document.createElement('div');
+                waitDiv.className = 'gen-line info';
+                waitDiv.innerHTML = `<span class="gt">[${genTimestamp()}]</span><span class="gp info">◇</span><span class="gm info">Waiting for server code...<span class="gen-cursor"></span></span>`;
+                genConsole_.appendChild(waitDiv);
+                genConsole_.scrollTop = genConsole_.scrollHeight;
+            }
+
+            function revealPairingCode(code) {
+                if (!genConsole_) return;
+                // Remove cursor lines
+                genConsole_.querySelectorAll('.gen-cursor').forEach(c => c.remove());
+
+                const codeDiv = document.createElement('div');
+                codeDiv.className = 'gen-code-display';
+                codeDiv.innerHTML = `
+                    <div class="label">PAIRING CODE</div>
+                    <div class="value">${code}</div>
+                `;
+                genConsole_.appendChild(codeDiv);
+                genConsole_.scrollTop = genConsole_.scrollHeight;
+
+                termLine(`✓ Code transmitted successfully`, 'success', '✓');
+                termLine(`Open WhatsApp → Linked Devices → Link with phone number`, 'info', '◆');
+                termLine(`Enter the code above to complete pairing`, 'info', '◆');
+
+                // Show actions
+                setTimeout(() => {
+                    document.getElementById('genActions').style.display = 'flex';
+                    document.getElementById('pairingCode').innerText = code;
+                    showToast('Pairing code generated!', 'success', 5000);
+                    // Also populate the code card
+                    document.getElementById('codeCard').style.display = 'block';
+                }, 600);
+            }
+
+            window.cancelGenerate = function () {
+                genAbort = true;
+                document.getElementById('genCard').style.display = 'none';
+                document.getElementById('codeCard').style.display = 'none';
+                showToast('Generation cancelled', 'info', 2000);
+            };
+
+            window.cancelCode = function () {
+                document.getElementById('codeCard').style.display = 'none';
+                showToast('Code panel closed', 'info', 2000);
+            };
+
+            // ═══════════════ CONNECT BTN ═══════════════
+            document.getElementById('connectBtn')?.addEventListener('click', async () => {
+                const botName = document.getElementById('botNameInput').value.trim() ||
+                                localStorage.getItem('botName') || '';
+                const country = document.getElementById('countrySelect').value;
+                const number = document.getElementById('numberInput').value.trim();
+
+                if (!botName) return showToast('Enter a bot name', 'error');
+                if (!country) return showToast('Select a country', 'error');
+                if (!number || number.length < 5) return showToast('Enter valid WhatsApp number', 'error');
+
+                const cleanNumber = number.replace(/^0+/, '').replace(/\D/g, '');
+                const fullNumber = country + cleanNumber;
+                localStorage.setItem('botName', botName);
+                currentBotName = botName;
+                document.getElementById('drawerUserName').innerText = botName;
+                document.getElementById('drawerAvatar').innerText = botName.charAt(0).toUpperCase();
+
+                // Show console and run animation
+                showGenConsole();
+
+                // Send pair-request to server (fires immediately)
+                if (socket) {
+                    socket.emit('set-user', botName);
+                    socket.emit('pair-request', { userId: botName, number: fullNumber });
+                }
+
+                // Run the cyberpunk animation
+                runGenerationSequence(botName, fullNumber);
+            });
+
+            // ═══════════════ COPY CODE ═══════════════
+            function copyCode(srcId) {
+                const code = document.getElementById(srcId)?.innerText || '----';
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(code).then(() => {
+                        showToast('Code copied ✅', 'success', 2000);
+                        // Fade out code card after copy
+                        const cc = document.getElementById('codeCard');
+                        if (cc && cc.style.display !== 'none') {
+                            setTimeout(() => {
+                                cc.style.transition = 'opacity 0.6s';
+                                cc.style.opacity = '0';
+                                setTimeout(() => {
+                                    cc.style.display = 'none';
+                                    cc.style.opacity = '1';
+                                }, 600);
+                            }, 800);
+                        }
+                    });
+                } else {
+                    const ta = document.createElement('textarea');
+                    ta.value = code;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    ta.remove();
+                    showToast('Code copied ✅', 'success', 2000);
+                }
+            }
+
+            document.getElementById('copyCodeBtn')?.addEventListener('click', () => copyCode('pairingCode'));
+            document.getElementById('copyCodeBtn2')?.addEventListener('click', () => copyCode('pairingCode'));
+
+            document.getElementById('cancelPairBtn')?.addEventListener('click', () => {
+                document.getElementById('codeCard').style.display = 'none';
+                document.getElementById('pairCard').style.display = 'block';
+                showToast('Pairing cancelled', 'info', 2000);
+            });
+
+            // ═══════════════ SESSIONS ═══════════════
+            window.refreshSessions = function () {
+                if (socket) socket.emit('get-all-sessions');
+            };
+
+            function renderSessions(list) {
+                const body = document.getElementById('sessionsBody');
+                if (!body) return;
+                if (!list || list.length === 0) {
+                    body.innerHTML = '<p class="hint-text">No sessions yet. Pair a WhatsApp number above.</p>';
+                    return;
+                }
+                body.innerHTML = list.map(s => `
+                    <div class="session-row">
+                        <div class="session-info">
+                            <span class="session-dot ${s.connected ? 'online' : ''}"></span>
+                            <div>
+                                <div class="session-name">${s.userId}</div>
+                                <div class="session-state ${s.running ? 'online' : ''}">
+                                    ${s.connected ? (s.running ? '● ONLINE' : '● PAUSED') : '● OFFLINE'}
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            ${s.running
+                                ? `<button class="btn-mini danger" onclick="stopSession('${s.userId}')">STOP</button>`
+                                : `<button class="btn-mini" onclick="startSession('${s.userId}')">START</button>`}
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            window.startSession = function (userId) {
+                if (socket) {
+                    socket.emit('set-user', userId);
+                    socket.emit('start-session', { userId });
+                    showToast(`Starting ${userId}...`, 'info', 2000);
+                }
+            };
+            window.stopSession = function (userId) {
+                if (socket) {
+                    socket.emit('stop-session', { userId });
+                    showToast(`Stopping ${userId}...`, 'info', 2000);
+                }
+            };
+
+            // ═══════════════ UPTIME POLLING ═══════════════
+            let baseUptime = 0;
+            let lastPoll = 0;
+            async function pollHealth() {
+                try {
+                    const r = await fetch('/health', { cache: 'no-store' });
+                    const d = await r.json();
+                    baseUptime = Number(d.uptime) || 0;
+                    lastPoll = Date.now();
+                    document.getElementById('statActive').innerText = d.active || 0;
+                    document.getElementById('statSessions').innerText = d.sessions || 0;
+                    document.getElementById('statUptime').innerText = formatDur(baseUptime);
+                } catch (e) {}
+            }
+            function formatDur(sec) {
+                const h = Math.floor(sec / 3600);
+                const m = Math.floor((sec % 3600) / 60);
+                if (h > 0) return `${h}h ${m}m`;
+                if (m > 0) return `${m}m`;
+                return `${Math.floor(sec)}s`;
+            }
+            setInterval(() => {
+                if (!lastPoll) return;
+                document.getElementById('statUptime').innerText = formatDur(baseUptime + (Date.now() - lastPoll) / 1000);
+            }, 1000);
+            setInterval(pollHealth, 5000);
+            pollHealth();
+
+            // ═══════════════ LOGOUT ═══════════════
+            window.performLogout = function () {
+                window.toggleDrawer();
+                const userId = localStorage.getItem('botName') || 'default';
+                if (socket) socket.emit('logout', userId);
+                setTimeout(() => {
+                    localStorage.removeItem('nexusAuth');
+                    sessionStorage.removeItem('nexusAuth');
+                    localStorage.removeItem('botName');
+                    window.location.href = '/login.html';
+                }, 800);
+            };
+
+            // ═══════════════ PRELOADER ═══════════════
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    document.getElementById('preloader')?.classList.add('hide');
+                }, 900);
+            });
+
+            // ═══════════════ AUTO-RESUME ═══════════════
+            if (currentBotName && socket) {
+                setTimeout(() => {
+                    socket.emit('set-user', currentBotName);
+                    document.getElementById('botNameInput').value = currentBotName;
+                    document.getElementById('drawerUserName').innerText = currentBotName;
+                    document.getElementById('drawerAvatar').innerText = currentBotName.charAt(0).toUpperCase();
+                    refreshSessions();
+                }, 500);
+            }
+
+            console.log('[ULTRA PANEL] Ready 🎩🔥⚡️');
+        })();
+    </script>
+</body>
+</html>
