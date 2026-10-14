@@ -45,18 +45,28 @@ bot_data.json
 blacklist.json
 session_states.json
 
-# ══════════ LOGS ══════════
-*.log
-logs/
-logs.txt
-error.log
-combined.log
-npm-debug.log
-
 # ══════════ PM2 ══════════
 .pm2/
 pids/
+*.pid
+*.pid.lock
 pm2-*.log
+pm2-*.pid
+pm2-*.sock
+dump.pm2
+dump.pm2.bak
+.pm2-logrotate/
+pm2-logrotate/
+
+# ══════════ LOGS ══════════
+logs/
+*.log
+error.log
+combined.log
+npm-debug.log
+yarn-error.log
+pm2-out.log
+pm2-error.log
 
 # ══════════ TEMPORARY FILES ══════════
 tmp/
@@ -64,11 +74,9 @@ temp/
 *.tmp
 *.temp
 *.cache
-*.pid
-*.seed
-*.pid.lock
 .cache/
-.npm/
+*.seed
+.cache-loader/
 
 # ══════════ MEDIA (auto-downloaded by commands) ══════════
 downloads/
@@ -89,6 +97,7 @@ temp_media/
 !assets/**/*.png
 !assets/**/*.jpg
 !assets/**/*.svg
+!assets/**/*.ico
 
 # ══════════ OS FILES ══════════
 .DS_Store
@@ -106,6 +115,8 @@ ehthumbs_vista.db
 desktop.ini
 $RECYCLE.BIN/
 *.stackdump
+.fuse_hidden*
+.nfs*
 
 # ══════════ EDITOR / IDE ══════════
 .vscode/
@@ -120,6 +131,8 @@ $RECYCLE.BIN/
 .c9/
 *.launch
 .settings/
+*.code-workspace
+.history/
 
 # ══════════ BUILD / DIST ══════════
 dist/
@@ -131,6 +144,8 @@ out/
 .parcel-cache/
 coverage/
 .nyc_output/
+.eslintcache
+.stylelintcache
 
 # ══════════ MISC ══════════
 *.bak
@@ -138,13 +153,36 @@ coverage/
 *.old
 *.orig
 *.rej
-.eslintcache
-.stylelintcache
+*.tgz
+*.tar.gz
+*.zip
+*.rar
+*.7z
+
+# ══════════ DEPLOYMENT PLATFORM ══════════
+.vercel/
+.netlify/
+.railway/
+.render/
+.heroku/
+.appveyor.yml
+.travis.yml
+.circleci/
+.github/workflows/*.log
+
+# ══════════ TESTING ══════════
+test/
+tests/
+__tests__/
+*.test.js
+*.spec.js
+coverage/
 
 # ══════════ KEEP THESE FILES ══════════
 !.gitignore
 !.env.example
 !package.json
+!ecosystem.config.js
 !settings.js
 !server.js
 !login.html
@@ -154,3 +192,5 @@ coverage/
 !assets/**/*
 !commands/**/*.js
 !README.md
+!LICENSE
+!.gitkeep
