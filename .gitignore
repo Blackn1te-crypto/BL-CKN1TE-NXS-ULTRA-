@@ -1,0 +1,156 @@
+# ═══════════════════════════════════════════════════════════════════
+#  BL@CKN1TE-NXS-ULTRA · .gitignore
+#  The Incisive Tri-Hat Hacker
+# ═══════════════════════════════════════════════════════════════════
+
+# ══════════ ENVIRONMENT SECRETS ══════════
+.env
+.env.*
+!.env.example
+
+# ══════════ NODE.JS ══════════
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.npm/
+.yarn-integrity
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ══════════ WHATSAPP SESSION DATA (CRITICAL) ══════════
+# Never commit these — they contain your WhatsApp login credentials
+auth_info/
+auth_info_*/
+auth/
+session/
+sessions/
+*.session
+session.json
+creds.json
+app-state-sync-*.json
+pre-key-*.json
+sender-key-*.json
+
+# ══════════ RUNTIME DATA ══════════
+data/
+!data/.gitkeep
+*.json.bak
+*.json.tmp
+*.corrupt.*
+bot_data.json
+blacklist.json
+session_states.json
+
+# ══════════ LOGS ══════════
+*.log
+logs/
+logs.txt
+error.log
+combined.log
+npm-debug.log
+
+# ══════════ PM2 ══════════
+.pm2/
+pids/
+pm2-*.log
+
+# ══════════ TEMPORARY FILES ══════════
+tmp/
+temp/
+*.tmp
+*.temp
+*.cache
+*.pid
+*.seed
+*.pid.lock
+.cache/
+.npm/
+
+# ══════════ MEDIA (auto-downloaded by commands) ══════════
+downloads/
+media/
+temp_media/
+*.mp3
+*.mp4
+*.wav
+*.m4a
+*.ogg
+*.webm
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+!logo.png
+!assets/**/*.png
+!assets/**/*.jpg
+!assets/**/*.svg
+
+# ══════════ OS FILES ══════════
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+Icon?
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+desktop.ini
+$RECYCLE.BIN/
+*.stackdump
+
+# ══════════ EDITOR / IDE ══════════
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+
+# ══════════ BUILD / DIST ══════════
+dist/
+build/
+out/
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
+coverage/
+.nyc_output/
+
+# ══════════ MISC ══════════
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+.eslintcache
+.stylelintcache
+
+# ══════════ KEEP THESE FILES ══════════
+!.gitignore
+!.env.example
+!package.json
+!settings.js
+!server.js
+!login.html
+!index.html
+!dashboard.html
+!logo.png
+!assets/**/*
+!commands/**/*.js
+!README.md
