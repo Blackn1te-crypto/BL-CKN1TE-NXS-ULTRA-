@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
-//  BL@CKN1TE-NXS-ULTRA · SERVER v18 · MEGA ULTIMATE
-//  The Incisive Tri-Hat Hacker · PERMANENT CONNECTION · REAL PNG LOGO
+//  BL@CKN1TE-NXS-ULTRA · SERVER v19 · MEGA ULTIMATE FINAL
+//  The Incisive Tri-Hat Hacker · PERMANENT · INSTANT · REAL PNG LOGO
 // ═══════════════════════════════════════════════════════════════════
 
 require('dotenv').config();
@@ -32,7 +32,7 @@ try { settings = require('./settings'); }
 catch (e) {
     settings = {
         botName: 'BL@CKN1TE-NXS',
-        botVersion: 'V18-ULTRA',
+        botVersion: 'V19-ULTRA',
         ownerName: 'BL@CKN1TE',
         ownerNumber: '263714799483',
         channelUrl: 'https://whatsapp.com/channel/0029VbDubJNHbFV50Y6oiO3f',
@@ -69,15 +69,11 @@ let LOGO_BUFFER = null;
 let LOGO_THUMBNAIL = null;
 let LOGO_LOADING = false;
 
-// Generate a small JPEG thumbnail from the PNG logo (Baileys needs this for preview)
 async function generateThumbnail(pngBuffer) {
-    // Use sharp if available for real thumbnail
     try {
         const sharp = require('sharp');
-        const thumb = await sharp(pngBuffer).resize(200, 200, { fit: 'inside' }).jpeg({ quality: 70 }).toBuffer();
-        return thumb;
+        return await sharp(pngBuffer).resize(200, 200, { fit: 'inside' }).jpeg({ quality: 70 }).toBuffer();
     } catch (e) {
-        // Fallback: use raw PNG as thumbnail (works but larger)
         return pngBuffer;
     }
 }
@@ -99,7 +95,6 @@ async function preloadLogo() {
             try { fs.writeFileSync(LOCAL_LOGO, LOGO_BUFFER); } catch (_) {}
             console.log(`✅ [LOGO] Fetched from URL (${LOGO_BUFFER.length} bytes)`);
         }
-        // Generate thumbnail once
         try {
             LOGO_THUMBNAIL = await generateThumbnail(LOGO_BUFFER);
             console.log(`✅ [LOGO] Thumbnail ready (${LOGO_THUMBNAIL.length} bytes)`);
@@ -121,81 +116,124 @@ function getLogoThumbnail() {
     return (LOGO_THUMBNAIL && LOGO_THUMBNAIL.length > 0) ? LOGO_THUMBNAIL : getLogoBuffer();
 }
 
-// ═══════════════ SAFE COMMAND LOADER ═══════════════
-function safeRequire(filePath, name) {
-    try {
-        if (fs.existsSync(filePath) || fs.existsSync(filePath + '.js')) {
-            console.log(`✅ [CMD] ${name}`);
-            return require(filePath);
+// ═══════════════ SMART COMMAND LOADER ═══════════════
+// Tries multiple paths so commands never show "offline" if the file exists anywhere
+function smartRequire(basePath, name) {
+    const candidates = [
+        basePath,
+        basePath + '.js',
+        path.join(basePath, 'index.js'),
+        path.join(CMD_DIR, name + '.js'),
+        path.join(CMD_DIR, name, 'index.js'),
+        path.join(CMD_DIR, name.toLowerCase() + '.js'),
+        path.join(CMD_DIR, name.toLowerCase(), 'index.js')
+    ];
+
+    for (const candidate of candidates) {
+        try {
+            if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+                const mod = require(candidate);
+                console.log(`✅ [CMD] ${name} → ${path.basename(candidate)}`);
+                return mod;
+            }
+        } catch (e) {
+            console.error(`⚠️ [CMD] ${name} (${candidate}): ${e.message}`);
         }
-        return async function stub(sock, from, msg) {
-            try { await sock.sendMessage(from, { text: `⚠️ *Command .${name} not available.*` }, { quoted: msg }); } catch (e) {}
-        };
-    } catch (e) {
-        console.error(`❌ [CMD] ${name}: ${e.message}`);
-        return async function stub(sock, from, msg) {
-            try { await sock.sendMessage(from, { text: `⚠️ *Command .${name} offline.*` }, { quoted: msg }); } catch (e) {}
-        };
     }
+
+    console.log(`⚠️ [CMD] ${name} NOT FOUND — using stub`);
+    return async function stub(sock, from, msg) {
+        try {
+            await sock.sendMessage(from, {
+                text: `⚠️ *Command .${name} is not installed on this build.*\n\n_Contact owner for support._`
+            }, { quoted: msg });
+        } catch (e) {}
+    };
 }
 
 const commands = {
-    ping: safeRequire(path.join(CMD_DIR, 'ping'), 'ping'),
-    owner: safeRequire(path.join(CMD_DIR, 'owner'), 'owner'),
-    song: safeRequire(path.join(CMD_DIR, 'song'), 'song'),
-    video: safeRequire(path.join(CMD_DIR, 'video'), 'video'),
-    tiktok: safeRequire(path.join(CMD_DIR, 'tiktok'), 'tiktok'),
-    insta: safeRequire(path.join(CMD_DIR, 'insta'), 'insta'),
-    facebook: safeRequire(path.join(CMD_DIR, 'facebook'), 'facebook'),
-    gdrive: safeRequire(path.join(CMD_DIR, 'gdrive'), 'gdrive'),
-    mf: safeRequire(path.join(CMD_DIR, 'mf'), 'mf'),
-    apk: safeRequire(path.join(CMD_DIR, 'apk'), 'apk'),
-    dp: safeRequire(path.join(CMD_DIR, 'dp'), 'dp'),
-    vv: safeRequire(path.join(CMD_DIR, 'vv'), 'vv'),
-    ai: safeRequire(path.join(CMD_DIR, 'ai'), 'ai'),
-    image: safeRequire(path.join(CMD_DIR, 'image'), 'image'),
-    tts: safeRequire(path.join(CMD_DIR, 'tts'), 'tts'),
-    translate: safeRequire(path.join(CMD_DIR, 'translate'), 'translate'),
-    character: safeRequire(path.join(CMD_DIR, 'character'), 'character'),
-    emojimix: safeRequire(path.join(CMD_DIR, 'emojimix'), 'emojimix'),
-    joke: safeRequire(path.join(CMD_DIR, 'joke'), 'joke'),
-    meme: safeRequire(path.join(CMD_DIR, 'meme'), 'meme'),
-    weather: safeRequire(path.join(CMD_DIR, 'weather'), 'weather'),
-    qr: safeRequire(path.join(CMD_DIR, 'qr'), 'qr'),
-    shorten: safeRequire(path.join(CMD_DIR, 'shorten'), 'shorten'),
-    calc: safeRequire(path.join(CMD_DIR, 'calc'), 'calc'),
-    antilink: safeRequire(path.join(CMD_DIR, 'antilink'), 'antilink'),
-    anticall: safeRequire(path.join(CMD_DIR, 'anticall'), 'anticall'),
-    antidelete: safeRequire(path.join(CMD_DIR, 'antidelete'), 'antidelete'),
-    antistatus: safeRequire(path.join(CMD_DIR, 'antistatus'), 'antistatus'),
-    autoreacts: safeRequire(path.join(CMD_DIR, 'autoreacts'), 'autoreacts'),
-    autostatus: safeRequire(path.join(CMD_DIR, 'status'), 'status'),
-    kick: safeRequire(path.join(CMD_DIR, 'kick'), 'kick'),
-    kickoffline: safeRequire(path.join(CMD_DIR, 'kickoffline'), 'kickoffline'),
-    hidetag: safeRequire(path.join(CMD_DIR, 'hidetag'), 'hidetag'),
-    tagall: safeRequire(path.join(CMD_DIR, 'tagall'), 'tagall'),
-    setname: safeRequire(path.join(CMD_DIR, 'setname'), 'setname'),
-    groupinfo: safeRequire(path.join(CMD_DIR, 'groupinfo'), 'groupinfo'),
-    accept: safeRequire(path.join(CMD_DIR, 'accept'), 'accept'),
-    hack: safeRequire(path.join(CMD_DIR, 'hack'), 'hack'),
-    private: safeRequire(path.join(CMD_DIR, 'private'), 'private'),
-    public: safeRequire(path.join(CMD_DIR, 'public'), 'public'),
-    autoread: safeRequire(path.join(CMD_DIR, 'autoread'), 'autoread'),
-    read: safeRequire(path.join(CMD_DIR, 'read'), 'read'),
-    online: safeRequire(path.join(CMD_DIR, 'online'), 'online'),
-    incisiveTrihatTools: safeRequire(path.join(CMD_DIR, 'incisive-trihat-tools'), 'incisive-trihat-tools'),
-    blackn1teWebsites: safeRequire(path.join(CMD_DIR, 'blackn1te-websites'), 'blackn1te-websites'),
-    settings: safeRequire(path.join(CMD_DIR, 'settings'), 'settings')
+    ping: smartRequire(path.join(CMD_DIR, 'ping'), 'ping'),
+    owner: smartRequire(path.join(CMD_DIR, 'owner'), 'owner'),
+    song: smartRequire(path.join(CMD_DIR, 'song'), 'song'),
+    video: smartRequire(path.join(CMD_DIR, 'video'), 'video'),
+    tiktok: smartRequire(path.join(CMD_DIR, 'tiktok'), 'tiktok'),
+    insta: smartRequire(path.join(CMD_DIR, 'insta'), 'insta'),
+    facebook: smartRequire(path.join(CMD_DIR, 'facebook'), 'facebook'),
+    gdrive: smartRequire(path.join(CMD_DIR, 'gdrive'), 'gdrive'),
+    mf: smartRequire(path.join(CMD_DIR, 'mf'), 'mf'),
+    apk: smartRequire(path.join(CMD_DIR, 'apk'), 'apk'),
+    dp: smartRequire(path.join(CMD_DIR, 'dp'), 'dp'),
+    vv: smartRequire(path.join(CMD_DIR, 'vv'), 'vv'),
+    ai: smartRequire(path.join(CMD_DIR, 'ai'), 'ai'),
+    image: smartRequire(path.join(CMD_DIR, 'image'), 'image'),
+    tts: smartRequire(path.join(CMD_DIR, 'tts'), 'tts'),
+    translate: smartRequire(path.join(CMD_DIR, 'translate'), 'translate'),
+    character: smartRequire(path.join(CMD_DIR, 'character'), 'character'),
+    emojimix: smartRequire(path.join(CMD_DIR, 'emojimix'), 'emojimix'),
+    joke: smartRequire(path.join(CMD_DIR, 'joke'), 'joke'),
+    meme: smartRequire(path.join(CMD_DIR, 'meme'), 'meme'),
+    weather: smartRequire(path.join(CMD_DIR, 'weather'), 'weather'),
+    qr: smartRequire(path.join(CMD_DIR, 'qr'), 'qr'),
+    shorten: smartRequire(path.join(CMD_DIR, 'shorten'), 'shorten'),
+    calc: smartRequire(path.join(CMD_DIR, 'calc'), 'calc'),
+    antilink: smartRequire(path.join(CMD_DIR, 'antilink'), 'antilink'),
+    anticall: smartRequire(path.join(CMD_DIR, 'anticall'), 'anticall'),
+    antidelete: smartRequire(path.join(CMD_DIR, 'antidelete'), 'antidelete'),
+    antistatus: smartRequire(path.join(CMD_DIR, 'antistatus'), 'antistatus'),
+    autoreacts: smartRequire(path.join(CMD_DIR, 'autoreacts'), 'autoreacts'),
+    autostatus: smartRequire(path.join(CMD_DIR, 'status'), 'status'),
+    kick: smartRequire(path.join(CMD_DIR, 'kick'), 'kick'),
+    kickoffline: smartRequire(path.join(CMD_DIR, 'kickoffline'), 'kickoffline'),
+    hidetag: smartRequire(path.join(CMD_DIR, 'hidetag'), 'hidetag'),
+    tagall: smartRequire(path.join(CMD_DIR, 'tagall'), 'tagall'),
+    setname: smartRequire(path.join(CMD_DIR, 'setname'), 'setname'),
+    groupinfo: smartRequire(path.join(CMD_DIR, 'groupinfo'), 'groupinfo'),
+    accept: smartRequire(path.join(CMD_DIR, 'accept'), 'accept'),
+    hack: smartRequire(path.join(CMD_DIR, 'hack'), 'hack'),
+    private: smartRequire(path.join(CMD_DIR, 'private'), 'private'),
+    public: smartRequire(path.join(CMD_DIR, 'public'), 'public'),
+    autoread: smartRequire(path.join(CMD_DIR, 'autoread'), 'autoread'),
+    read: smartRequire(path.join(CMD_DIR, 'read'), 'read'),
+    online: smartRequire(path.join(CMD_DIR, 'online'), 'online'),
+    incisiveTrihatTools: smartRequire(path.join(CMD_DIR, 'incisive-trihat-tools'), 'incisive-trihat-tools'),
+    blackn1teWebsites: smartRequire(path.join(CMD_DIR, 'blackn1te-websites'), 'blackn1te-websites'),
+    settings: smartRequire(path.join(CMD_DIR, 'settings'), 'settings')
 };
 
+// Hook loaders (autoread, autostatus, antidelete)
 let handleAutoread = async () => {};
 let autoreadCommand = null;
-try { if (fs.existsSync(path.join(CMD_DIR, 'autoread.js'))) { const ar = require(path.join(CMD_DIR, 'autoread')); if (ar.handleAutoread) handleAutoread = ar.handleAutoread; if (ar.autoreadCommand) autoreadCommand = ar.autoreadCommand; } } catch (e) {}
+try {
+    const arPath = path.join(CMD_DIR, 'autoread.js');
+    if (fs.existsSync(arPath)) {
+        const ar = require(arPath);
+        if (ar.handleAutoread) handleAutoread = ar.handleAutoread;
+        if (ar.autoreadCommand) autoreadCommand = ar.autoreadCommand;
+        console.log('✅ [HOOK] autoread loaded');
+    }
+} catch (e) { console.error('⚠️ [HOOK] autoread:', e.message); }
+
 let handleStatusUpdate = async () => {};
-try { if (fs.existsSync(path.join(CMD_DIR, 'autostatus.js'))) { const su = require(path.join(CMD_DIR, 'autostatus')); if (su.handleStatusUpdate) handleStatusUpdate = su.handleStatusUpdate; } } catch (e) {}
+try {
+    const suPath = path.join(CMD_DIR, 'autostatus.js');
+    if (fs.existsSync(suPath)) {
+        const su = require(suPath);
+        if (su.handleStatusUpdate) handleStatusUpdate = su.handleStatusUpdate;
+        console.log('✅ [HOOK] autostatus loaded');
+    }
+} catch (e) { console.error('⚠️ [HOOK] autostatus:', e.message); }
+
 let storeMessage = async () => {};
 let handleMessageRevocation = async () => {};
-try { if (fs.existsSync(path.join(CMD_DIR, 'antidelete.js'))) { const ad = require(path.join(CMD_DIR, 'antidelete')); if (ad.storeMessage) storeMessage = ad.storeMessage; if (ad.handleMessageRevocation) handleMessageRevocation = ad.handleMessageRevocation; } } catch (e) {}
+try {
+    const adPath = path.join(CMD_DIR, 'antidelete.js');
+    if (fs.existsSync(adPath)) {
+        const ad = require(adPath);
+        if (ad.storeMessage) storeMessage = ad.storeMessage;
+        if (ad.handleMessageRevocation) handleMessageRevocation = ad.handleMessageRevocation;
+        console.log('✅ [HOOK] antidelete loaded');
+    }
+} catch (e) { console.error('⚠️ [HOOK] antidelete:', e.message); }
 
 // ═══════════════ APP + SOCKET ═══════════════
 const app = express();
@@ -233,7 +271,7 @@ app.use(session({
 app.use(express.static(path.join(__dirname), { maxAge: '1d' }));
 app.use('/assets', express.static(path.join(__dirname, 'assets'), { maxAge: '1d' }));
 
-// ═══════════════ ROUTES (Login first, fast) ═══════════════
+// ═══════════════ ROUTES ═══════════════
 app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'login.html')); });
 app.get('/login', (req, res) => { res.sendFile(path.join(__dirname, 'login.html')); });
 app.get('/login.html', (req, res) => { res.sendFile(path.join(__dirname, 'login.html')); });
@@ -346,7 +384,7 @@ app.get('/health', (req, res) => {
     res.json({
         status: 'ok',
         bot: settings.botName,
-        version: settings.botVersion || 'V18-ULTRA',
+        version: settings.botVersion || 'V19-ULTRA',
         sessions: sess.total,
         active: sess.running,
         online: sess.online,
@@ -377,7 +415,7 @@ app.get('/api/json/stats', async (req, res) => {
         sessions: sess,
         ping,
         bot: settings.botName,
-        version: settings.botVersion || 'V18-ULTRA',
+        version: settings.botVersion || 'V19-ULTRA',
         aiReady: !!openai,
         timestamp: new Date().toISOString()
     });
@@ -421,7 +459,7 @@ app.get('/api/json/settings', (req, res) => {
             infiniteMode: INFINITE_MODE,
             promaxSpeed: PROMax_SPEED,
             permanentConnection: PERMANENT_CONNECTION,
-            version: settings.botVersion || 'V18-ULTRA',
+            version: settings.botVersion || 'V19-ULTRA',
             aiReady: !!openai
         }
     });
@@ -528,7 +566,7 @@ function buildCyberpunkBannerSync(session, botName) {
     return (
 `⛧━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━⛧
     ░▒▓█  ${toBold('BL@CKN1TE-NXS')}  █▓▒░
-    ░▒▓█  ${toBold('V18 • PERMANENT • INSTANT')}  █▓▒░
+    ░▒▓█  ${toBold('V19 • PERMANENT • INSTANT')}  █▓▒░
 ⛧━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━⛧
 
 ⚡️🔥⚡️   ${toBold('SYSTEM ONLINE')}   ⚡️🔥⚡️
@@ -555,7 +593,7 @@ function buildCyberpunkBannerSync(session, botName) {
 ╚═══════════════════════════════════════╝
 
 ╰┈➤ 🎯 ${toBold("YOU'RE NOW LINKED TO")}
-╰┈➤ ➜ ${toBold('BL@CKN1TE-NXS')} · ${toBold('V18 ULTRA')}
+╰┈➤ ➜ ${toBold('BL@CKN1TE-NXS')} · ${toBold('V19 ULTRA')}
 ╰┈➤ ➜ ${toBold('SECURED & ENCRYPTED')}
 ╰┈➤ ➜ ${toBold('LIFETIME PERMANENT')}
 
@@ -589,7 +627,7 @@ function buildBeautifulMenuSync(session, botData, customName) {
     const modeIcon = session.isPublic ? '🌐' : '🔒';
     const modeText = session.isPublic ? 'PUBLIC' : 'PRIVATE';
     const ownerName = settings.ownerName || 'BL@CKN1TE';
-    const version = settings.botVersion || 'V18-ULTRA';
+    const version = settings.botVersion || 'V19-ULTRA';
     const now = new Date();
     const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
     const dateStr = now.toLocaleDateString('en-GB');
@@ -612,7 +650,7 @@ function buildBeautifulMenuSync(session, botData, customName) {
 
     const header = `⛧━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━⛧
     ░▒▓█  ${toBold('BL@CKN1TE-NXS')}  █▓▒░
-    ░▒▓█  ${toBold('V18 • CYBERPUNK • PERMANENT')}  █▓▒░
+    ░▒▓█  ${toBold('V19 • CYBERPUNK • PERMANENT')}  █▓▒░
 ⛧━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━⛧
 
 ⚡️🔥  ${statusStr}  🔥⚡️`;
@@ -743,7 +781,6 @@ class BotSession {
         try { this.sock?.sendPresenceUpdate('composing'); } catch (e) {}
     }
 
-    // ═══════════════ FIXED: Connection status broadcast globally ═══════════════
     sendConnectionStatus(force = false) {
         const signature = `${this.isConnected}|${this.isRunning}`;
         if (!force && this._lastStatusSignature === signature) return;
@@ -758,7 +795,6 @@ class BotSession {
         const socketId = userSockets[this.userId];
         if (socketId) io.to(socketId).emit('connection-status', payload);
 
-        // ═══ KEY FIX: Broadcast to ALL dashboards ═══
         io.emit('connection-status', payload);
         io.emit('session-status', payload);
 
@@ -1008,7 +1044,6 @@ class BotSession {
                             (async () => {
                                 try {
                                     switch (commandName) {
-                                        // ═══ FIXED MENU: Real PNG image with proper thumbnail ═══
                                         case 'menu':
                                         case 'start': {
                                             try {
@@ -1199,7 +1234,6 @@ class BotSession {
                         this.sendLog('♾️ Connection restored silently', 'info');
                     }
 
-                    // ═══ KEY FIX: Force broadcast to sync dashboard instantly ═══
                     this.sendConnectionStatus(true);
 
                     this.startActiveCheck();
@@ -1212,17 +1246,10 @@ class BotSession {
                             await this.sock.query({
                                 tag: 'iq',
                                 attrs: { to: '@s.whatsapp.net', type: 'set', xmlns: 'status' },
-                                content: [{ tag: 'status', attrs: {}, content: Buffer.from("I'M USING BEST BOT BL@CKN1TE-NXS V18 ULTRA", 'utf-8') }]
+                                content: [{ tag: 'status', attrs: {}, content: Buffer.from("I'M USING BEST BOT BL@CKN1TE-NXS V19 ULTRA", 'utf-8') }]
                             });
                         } catch (e) {}
                     }, 1500);
-
-                    if (this.isRunning && (!this.lastConnectMessageTime || (Date.now() - this.lastConnectMessageTime > 60 * 60 * 1000))) {
-                        this.sock.sendMessage(botNumber, {
-                            text: "♾️ 𝗕𝗟@𝗖𝗞𝗡𝟭𝗧𝗘-𝗡𝗫𝗦 𝗩𝟭𝟴 𝗨𝗟𝗧𝗥𝗔 𝗖𝗢𝗡𝗡𝗘𝗖𝗧𝗘𝗗 ✅\n\nPrefixes: .  /  >\n\nType .menu to unleash commands."
-                        }).catch(() => {});
-                        this.lastConnectMessageTime = Date.now();
-                    }
                 }
             });
 
@@ -1254,7 +1281,6 @@ io.on('connection', (socket) => {
         sessions: Object.keys(sessions).length
     });
 
-    // ═══ KEY FIX: Force broadcast connection-status when user connects ═══
     socket.on('set-user', (userId) => {
         userSockets[userId] = socket.id;
         if (!sessions[userId]) sessions[userId] = new BotSession(userId);
@@ -1264,7 +1290,6 @@ io.on('connection', (socket) => {
             if (!s.everConnected && !s.isRunning && persisted.isRunning) s.isRunning = true;
         }
 
-        // Send current status instantly
         socket.emit('connection-status', {
             connected: s.isConnected,
             running: s.isRunning,
@@ -1272,7 +1297,6 @@ io.on('connection', (socket) => {
             restored: true
         });
 
-        // ═══ Broadcast globally so ALL tabs stay synced ═══
         io.emit('connection-status', {
             connected: s.isConnected,
             running: s.isRunning,
@@ -1285,7 +1309,6 @@ io.on('connection', (socket) => {
             running: sessions[uid].isRunning
         })));
 
-        // ═══ Force refresh status every 3 seconds for sync ═══
         if (s._statusRefreshInterval) clearInterval(s._statusRefreshInterval);
         s._statusRefreshInterval = setInterval(() => {
             socket.emit('connection-status', {
@@ -1325,6 +1348,7 @@ io.on('connection', (socket) => {
         } catch (e) { console.error('[PAIR-REQUEST]', e); }
     });
 
+    // ═══════════════ START SESSION — INSTANT ACTIVE + BANNER ═══════════════
     socket.on('start-session', async (payload) => {
         try {
             const userId = (typeof payload === 'string') ? payload : (payload && payload.userId);
@@ -1334,6 +1358,7 @@ io.on('connection', (socket) => {
             if (!sessions[userId]) sessions[userId] = new BotSession(userId);
             const s = sessions[userId];
 
+            // Wait for socket up to 8s (usually already ready)
             if (!s.sock || !s.sock.user) {
                 const startWait = Date.now();
                 while ((!s.sock || !s.sock.user) && (Date.now() - startWait < 8000)) {
@@ -1349,6 +1374,7 @@ io.on('connection', (socket) => {
                 return;
             }
 
+            // ═══ ACTIVATE FIRST (so commands work before banner lands) ═══
             s.isRunning = true;
             s.isPaused = false;
             s._pausedNoticeShown = false;
@@ -1358,30 +1384,7 @@ io.on('connection', (socket) => {
             if (!s.botJidCache) s.botJidCache = jidNormalizedUser(s.sock.user.id);
             s.sock.sendPresenceUpdate('available').catch(() => {});
 
-            // ═══ INSTANT BANNER with real PNG ═══
-            const banner = buildCyberpunkBannerSync(s, botName);
-            const logoBuffer = getLogoBuffer();
-            const thumbnail = getLogoThumbnail();
-
-            if (logoBuffer) {
-                s.sock.sendMessage(s.botJidCache, {
-                    image: logoBuffer,
-                    caption: banner,
-                    mimetype: 'image/png',
-                    jpegThumbnail: thumbnail,
-                    fileName: 'bl@ckn1te-nxs.png'
-                }).then(() => s.sendLog('🎩🔥⚡️ BANNER DELIVERED INSTANT ✅', 'success'))
-                  .catch(async () => {
-                      try { await s.sock.sendMessage(s.botJidCache, { image: { url: LOGO_URL }, caption: banner, mimetype: 'image/png' }); }
-                      catch (e2) { await s.sock.sendMessage(s.botJidCache, { text: banner }); }
-                  });
-            } else {
-                preloadLogo().catch(() => {});
-                try { await s.sock.sendMessage(s.botJidCache, { image: { url: LOGO_URL }, caption: banner, mimetype: 'image/png' }); }
-                catch (e2) { await s.sock.sendMessage(s.botJidCache, { text: banner }); }
-            }
-
-            // ═══ INSTANT connection status broadcast ═══
+            // ═══ INSTANT status broadcast — pill flips immediately ═══
             s.sendConnectionStatus(true);
             socket.emit('session-status', { user: userId, running: true, connected: true });
             io.emit('connection-status', { connected: true, running: true, user: userId });
@@ -1398,6 +1401,34 @@ io.on('connection', (socket) => {
                 connected: sessions[uid].isConnected,
                 running: sessions[uid].isRunning
             })));
+
+            // ═══ BANNER DELIVERED (background, don't block) ═══
+            const banner = buildCyberpunkBannerSync(s, botName);
+            const logoBuffer = getLogoBuffer();
+            const thumbnail = getLogoThumbnail();
+
+            if (logoBuffer) {
+                s.sock.sendMessage(s.botJidCache, {
+                    image: logoBuffer,
+                    caption: banner,
+                    mimetype: 'image/png',
+                    jpegThumbnail: thumbnail,
+                    fileName: 'bl@ckn1te-nxs.png'
+                }).then(() => s.sendLog('🎩🔥⚡️ BANNER DELIVERED — BOT IS ACTIVE ✅', 'success'))
+                  .catch(async () => {
+                      try { await s.sock.sendMessage(s.botJidCache, { image: { url: LOGO_URL }, caption: banner, mimetype: 'image/png' }); }
+                      catch (e2) { await s.sock.sendMessage(s.botJidCache, { text: banner }); }
+                  });
+            } else {
+                preloadLogo().catch(() => {});
+                s.sock.sendMessage(s.botJidCache, {
+                    image: { url: LOGO_URL },
+                    caption: banner,
+                    mimetype: 'image/png'
+                }).catch(async () => {
+                    try { await s.sock.sendMessage(s.botJidCache, { text: banner }); } catch (e) {}
+                });
+            }
 
         } catch (e) {
             console.error('[START-SESSION]', e);
@@ -1624,7 +1655,7 @@ async function loadExistingSessions() {
     } catch (err) { console.error('[System] Load error:', err.message); }
 }
 
-// ═══════════════ SUPERVISOR (MINIMAL) ═══════════════
+// ═══════════════ SUPERVISOR ═══════════════
 function startSupervisor() {
     setInterval(async () => {
         try {
@@ -1655,14 +1686,14 @@ function startSupervisor() {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, async () => {
     console.log(`\n╔═══════════════════════════════════════════════╗`);
-    console.log(`║  BL@CKN1TE-NXS-ULTRA · SERVER V18             ║`);
-    console.log(`║  PERMANENT CONNECTION · REAL PNG LOGO         ║`);
+    console.log(`║  BL@CKN1TE-NXS-ULTRA · SERVER V19 FINAL       ║`);
+    console.log(`║  PERMANENT · INSTANT · REAL PNG LOGO          ║`);
     console.log(`╚═══════════════════════════════════════════════╝`);
     console.log(`🚀 Port: ${PORT}`);
     console.log(`🌐 Panel: http://localhost:${PORT}`);
     console.log(`🔐 Login: /login.html`);
     console.log(`🎛️ Dashboard: /index.html`);
-    console.log(`🤖 Bot: ${settings.botName} · ${settings.botVersion || 'V18-ULTRA'}`);
+    console.log(`🤖 Bot: ${settings.botName} · ${settings.botVersion || 'V19-ULTRA'}`);
     console.log(`🔣 Prefixes: ${PREFIXES.join('  ')}`);
     console.log(`♾️ PERMANENT CONNECTION: ENABLED`);
     console.log(`⚡ INSTANT RESPONSE: ENABLED`);
